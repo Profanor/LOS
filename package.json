@@ -1,0 +1,31 @@
+{
+  "name": "project-los",
+  "version": "1.0.0",
+  "description": "game workflow",
+  "main": "app.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "nodemon --exec ts-node app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Arinze",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.0",
+    "mongoose": "^8.3.2",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.0",
+    "socket.io": "^4.7.5",
+    "winston": "^3.13.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/morgan": "^1.9.9",
+    "@types/ws": "^8.5.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
