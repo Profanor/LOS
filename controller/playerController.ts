@@ -27,8 +27,8 @@ const generateSecretKey = (): string => {
 const secretKey = process.env.SECRET_KEY || generateSecretKey();
 
 // Function to generate access token
-const generateAccessToken = (userId: string): string => {
-  return jwt.sign({ userId }, secretKey, { expiresIn: '1h' });
+const generateAccessToken = (tokenPayload: { userId: string; walletAddress: string; nickname: string }): string => {
+  return jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' });
 };
 
 // Function to generate refresh token
@@ -56,8 +56,13 @@ export const signup = async (req: Request, res: Response) => {
       if (existingPlayer) {
         // If player exists, generate JWT token and send it back to the client
         const userId = existingPlayer._id.toString();
-        const token = generateAccessToken(userId);
+        const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
+        const token = generateAccessToken(tokenPayload);
         const refreshToken = generateRefreshToken(userId);
+
+        // Log the token payload before sending it back
+        logger.info('Token payload:', tokenPayload);
+
         return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
       };
 
@@ -112,9 +117,13 @@ export const signup = async (req: Request, res: Response) => {
       }
       // Generate JWT token and refresh token for the newly created player
       const userId = newPlayer._id.toString();
-      const token = generateAccessToken(userId);
+      const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
+      const token = generateAccessToken(tokenPayload);
       const refreshToken = generateRefreshToken(userId);
-      
+
+      // Log the token payload before sending it back
+      logger.info('Token payload:', tokenPayload);
+
       return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
       
     } catch (error) {
@@ -183,6 +192,39 @@ export const searchForPlayer = async (req: Request, res: Response) => {
       return res.status(400).send('Either nickname or walletAddress is required');
     }
 
+    // Extract the JWT token from the request headers
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    // Verify the JWT token and extract user information
+    let decodedToken: any;
+    try {
+      decodedToken = jwt.verify(token, secretKey);
+    } catch (error) {
+      logger.error('Error verifying JWT token:', error);
+      return res.status(401).send('Invalid token or token verification failed');
+    }
+
+    if (!decodedToken || !decodedToken.walletAddress) {
+      logger.error('Invalid token or missing user information:', decodedToken);
+      return res.status(401).send('Invalid token or missing user information');
+    }
+
+    if (!decodedToken) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    const currentUserWalletAddress = decodedToken.walletAddress;
+    const currentUserNickname = decodedToken.nickname;
+
+    // Check if the current user is trying to search for themselves
+    if (walletAddress === currentUserWalletAddress || nickname === currentUserNickname) {
+      return res.status(400).send('You cannot search for yourself');
+    }
+
     // Prepare the search query
     const query: any = {};
     if (nickname) {
@@ -191,6 +233,9 @@ export const searchForPlayer = async (req: Request, res: Response) => {
     if (walletAddress) {
       query.walletAddress = walletAddress;
     }
+
+   // Exclude the current user's data from the search
+   query.walletAddress = { $ne: currentUserWalletAddress };
 
     // Use $or to search by either nickname or walletAddress
     const players = await Player.find({ $or: [query] }).select('walletAddress');

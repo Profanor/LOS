@@ -34,8 +34,8 @@ const generateSecretKey = () => {
 // Generate a random secret key or use one from environment variables
 const secretKey = process.env.SECRET_KEY || generateSecretKey();
 // Function to generate access token
-const generateAccessToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ userId }, secretKey, { expiresIn: '1h' });
+const generateAccessToken = (tokenPayload) => {
+    return jsonwebtoken_1.default.sign(tokenPayload, secretKey, { expiresIn: '1h' });
 };
 // Function to generate refresh token
 const generateRefreshToken = (userId) => {
@@ -58,8 +58,11 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (existingPlayer) {
             // If player exists, generate JWT token and send it back to the client
             const userId = existingPlayer._id.toString();
-            const token = generateAccessToken(userId);
+            const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
+            const token = generateAccessToken(tokenPayload);
             const refreshToken = generateRefreshToken(userId);
+            // Log the token payload before sending it back
+            logger.info('Token payload:', tokenPayload);
             return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
         }
         ;
@@ -112,8 +115,11 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         // Generate JWT token and refresh token for the newly created player
         const userId = newPlayer._id.toString();
-        const token = generateAccessToken(userId);
+        const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
+        const token = generateAccessToken(tokenPayload);
         const refreshToken = generateRefreshToken(userId);
+        // Log the token payload before sending it back
+        logger.info('Token payload:', tokenPayload);
         return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
     }
     catch (error) {
@@ -166,10 +172,38 @@ const getBattleMeta = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.getBattleMeta = getBattleMeta;
 const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { nickname, walletAddress } = req.body;
         if (!nickname && !walletAddress) {
             return res.status(400).send('Either nickname or walletAddress is required');
+        }
+        // Extract the JWT token from the request headers
+        const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(' ')[1];
+        if (!token) {
+            return res.status(401).send('Unauthorized');
+        }
+        // Verify the JWT token and extract user information
+        let decodedToken;
+        try {
+            decodedToken = jsonwebtoken_1.default.verify(token, secretKey);
+        }
+        catch (error) {
+            logger.error('Error verifying JWT token:', error);
+            return res.status(401).send('Invalid token or token verification failed');
+        }
+        if (!decodedToken || !decodedToken.walletAddress) {
+            logger.error('Invalid token or missing user information:', decodedToken);
+            return res.status(401).send('Invalid token or missing user information');
+        }
+        if (!decodedToken) {
+            return res.status(401).send('Unauthorized');
+        }
+        const currentUserWalletAddress = decodedToken.walletAddress;
+        const currentUserNickname = decodedToken.nickname;
+        // Check if the current user is trying to search for themselves
+        if (walletAddress === currentUserWalletAddress || nickname === currentUserNickname) {
+            return res.status(400).send('You cannot search for yourself');
         }
         // Prepare the search query
         const query = {};
@@ -179,6 +213,8 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
         if (walletAddress) {
             query.walletAddress = walletAddress;
         }
+        // Exclude the current user's data from the search
+        query.walletAddress = { $ne: currentUserWalletAddress };
         // Use $or to search by either nickname or walletAddress
         const players = yield player_1.default.find({ $or: [query] }).select('walletAddress');
         // Check if players array is empty
