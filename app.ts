@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import logger from 'morgan';
+import index from './routes/index';
 import playerRoutes from './routes/players'; 
 import pvpRoutes from './routes/pvpRouter';
 import teamRoutes from './routes/teamRouter';
@@ -18,6 +19,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logger('dev'));
+app.use('/', index);
 app.use(playerRoutes);
 app.use(pvpRoutes);
 app.use(teamRoutes);

@@ -38,6 +38,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendPushNotification = void 0;
 const admin = __importStar(require("firebase-admin"));
 const player_1 = __importDefault(require("./models/player"));
+const winston_1 = __importDefault(require("winston"));
+const logger = winston_1.default.createLogger({
+    level: 'info',
+    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
+    transports: [
+        new winston_1.default.transports.Console(),
+        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston_1.default.transports.File({ filename: 'combined.log' })
+    ]
+});
 // Initialize Firebase Admin SDK with your service account credentials
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -48,13 +58,13 @@ const sendPushNotification = (playerWalletAddress, message) => __awaiter(void 0,
         // Find the player using the wallet address
         const player = yield player_1.default.findOne({ walletAddress: playerWalletAddress });
         if (!player) {
-            console.error('Player not found');
+            logger.error('Player not found');
             return;
         }
         const registrationToken = player.registrationToken;
         // Check if registrationToken is available
         if (!registrationToken) {
-            console.error('Registration token not found for player:', playerWalletAddress);
+            logger.error('Registration token not found for player:', playerWalletAddress);
             return;
         }
         // Define the payload for the push notification
@@ -74,7 +84,7 @@ const sendPushNotification = (playerWalletAddress, message) => __awaiter(void 0,
         console.log('Push notification sent successfully');
     }
     catch (error) {
-        console.error('Error sending push notification:', error);
+        logger.error('Error sending push notification:', error);
     }
 });
 exports.sendPushNotification = sendPushNotification;
