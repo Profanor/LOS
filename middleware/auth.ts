@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction } from "express";
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import axios from "axios";
 import dotenv from 'dotenv';
 dotenv.config(); 
@@ -38,7 +38,8 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
   return res.status(401).json({ message: 'Access denied. Token missing' });
   }
   
-  jwt.verify(token, key, (err, user) => {
+  // Verify token
+  jwt.verify(token, key, async (err: JsonWebTokenError | null, decodedToken: any) => {
     if (err) {
       logger.error('JWT verification failed:', err.message);
       return res.status(401).json({ message: 'Invalid token' });
@@ -46,32 +47,44 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
 
     // Check token expiration and initiate token refresh if needed
     const currentTime = Math.floor(Date.now() / 1000);
-    const decodedToken: any = jwt.decode(token, { complete: true });
     const tokenExpiration = decodedToken.exp;
 
     // If token expires within 5 minutes, refresh the token
     if (tokenExpiration - currentTime < 300) {
+      try {
       // Call token refresh endpoint to get a new token
       const refreshTokenUrl = process.env.REFRESH_TOKEN_URL || 'http://localhost:3000/refresh-token';
-
+      const response = await
       axios.post(refreshTokenUrl, null, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
-      })
-      .then((response) => {
-        // Update token in request headers
+      });
+
+        // Extract and verify new token
         const newToken = response.data.token;
+        const newDecodedToken: any = jwt.verify(newToken, key);
+
+        console.log(newDecodedToken);
+        
+
+        // Check new token payload for required user information
+        if (!newDecodedToken || !newDecodedToken.walletAddress || !newDecodedToken.nickname || !newDecodedToken.userId) {
+          logger.error('Invalid token or missing user information:', newDecodedToken);
+          return res.status(401).send('Invalid token or missing user information');
+        }
+
+         // Update token in request headers
         req.headers['authorization'] = `Bearer ${newToken}`;
         next();
-      })
-      .catch((error) => {
+      }
+      catch (error) {
         logger.error('Token refresh error:', error);
         return res.status(500).json({ error: 'Token refresh failed' });
-      });
+      }
     } else {
       // Token is valid and does not require refresh
-      req.user = user;
+      req.user = decodedToken;
     next();
     }
   });

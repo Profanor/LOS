@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addFriend = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.addFriend = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -33,13 +33,12 @@ const generateSecretKey = () => {
 };
 // Generate a random secret key or use one from environment variables
 const secretKey = process.env.SECRET_KEY || generateSecretKey();
-// Function to generate access token
-const generateAccessToken = (tokenPayload) => {
-    return jsonwebtoken_1.default.sign(tokenPayload, secretKey, { expiresIn: '1h' });
-};
-// Function to generate refresh token
-const generateRefreshToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ userId }, secretKey, { expiresIn: '7d' }); // Refresh token expiry can be longer
+//Function to generate JWT access token and refresh token based on the provided payload.
+const generateTokens = (tokenPayload) => {
+    const token = jsonwebtoken_1.default.sign(tokenPayload, secretKey, { expiresIn: '1h' });
+    const refreshTokenPayload = { userId: tokenPayload.userId, walletAddress: tokenPayload.walletAddress, nickname: tokenPayload.nickname }; // Include walletAddress and nickname
+    const refreshToken = jsonwebtoken_1.default.sign(refreshTokenPayload, secretKey, { expiresIn: '7d' });
+    return { token, refreshToken };
 };
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { walletAddress, nickname } = req.body;
@@ -56,11 +55,12 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Check if player with same nickname and wallet address exists
         const existingPlayer = yield player_1.default.findOne({ nickname, walletAddress });
         if (existingPlayer) {
+            // Player already exists, update isOnline status to true
+            yield player_1.default.updateOne({ _id: existingPlayer._id }, { $set: { isOnline: true } });
             // If player exists, generate JWT token and send it back to the client
             const userId = existingPlayer._id.toString();
             const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
-            const token = generateAccessToken(tokenPayload);
-            const refreshToken = generateRefreshToken(userId);
+            const { token, refreshToken } = generateTokens(tokenPayload);
             // Log the token payload before sending it back
             logger.info('Token payload:', tokenPayload);
             return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
@@ -96,7 +96,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const newPlayer = yield player_1.default.create({
             walletAddress,
             nickname,
-            isOnline: false,
+            isOnline: true,
             battleLog: [],
             notification_BattleRequest: {
                 isRead: false,
@@ -109,15 +109,14 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 attributes: [],
             }
         });
-        // Generate JWT token for the newly created player
+        // Check if SECRET_KEY environment variable is set and accessible
         if (!process.env.SECRET_KEY) {
             return res.status(500).json({ error: 'Internal server error. Missing SECRET_KEY.' });
         }
         // Generate JWT token and refresh token for the newly created player
         const userId = newPlayer._id.toString();
         const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
-        const token = generateAccessToken(tokenPayload);
-        const refreshToken = generateRefreshToken(userId);
+        const { token, refreshToken } = generateTokens(tokenPayload);
         // Log the token payload before sending it back
         logger.info('Token payload:', tokenPayload);
         return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
@@ -192,12 +191,19 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
             logger.error('Error verifying JWT token:', error);
             return res.status(401).send('Invalid token or token verification failed');
         }
-        if (!decodedToken || !decodedToken.walletAddress) {
+        // Log the token payload before sending it back
+        logger.info('Token payload:', decodedToken);
+        // Log the presence of nickname and walletAddress in the token payload
+        if (decodedToken && decodedToken.walletAddress && decodedToken.nickname) {
+            logger.info('Nickname:', decodedToken.nickname);
+            logger.info('WalletAddress:', decodedToken.walletAddress);
+        }
+        else {
+            logger.error('Nickname or walletAddress missing in token payload:', decodedToken);
+        }
+        if (!decodedToken || !decodedToken.walletAddress || !decodedToken.nickname) {
             logger.error('Invalid token or missing user information:', decodedToken);
             return res.status(401).send('Invalid token or missing user information');
-        }
-        if (!decodedToken) {
-            return res.status(401).send('Unauthorized');
         }
         const currentUserWalletAddress = decodedToken.walletAddress;
         const currentUserNickname = decodedToken.nickname;
@@ -272,3 +278,23 @@ const addFriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.addFriend = addFriend;
+const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied. Token missing' });
+    }
+    try {
+        const decodedToken = jsonwebtoken_1.default.verify(token, secretKey);
+        // Extract user ID from decoded token
+        const userId = decodedToken.userId;
+        // Update player's isOnline status to false upon logout
+        const updateResult = yield player_1.default.updateOne({ _id: userId }, { $set: { isOnline: false } });
+        return res.status(200).json({ message: 'Logout successful' });
+    }
+    catch (error) {
+        console.error('Error logging out player:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.logout = logout;

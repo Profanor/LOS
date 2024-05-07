@@ -1,6 +1,6 @@
 import authenticateToken from '../middleware/auth';
 import express from 'express';
-import { signup,switchCharacter,getBattleMeta,searchForPlayer,getPlayerOnlineStatus,addFriend} from '../controller/playerController';
+import { signup,switchCharacter,getBattleMeta,searchForPlayer,getPlayerOnlineStatus,addFriend,logout} from '../controller/playerController';
 
 const router = express.Router();
 
@@ -15,5 +15,7 @@ router.post('/api/players/search', authenticateToken, searchForPlayer);
 router.get('/online-status/:walletAddress', getPlayerOnlineStatus);
 
 router.post('/api/players/addfriend', addFriend);
+
+router.post('/logout', logout);
     
 export default router;
