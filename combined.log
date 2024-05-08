@@ -74,3 +74,15 @@
 {"exp":1715085202,"iat":1715081602,"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T11:52:26.904Z","userId":"663a050eefb499be18133874","walletAddress":"dan12x"}
 {"level":"info","message":"Nickname:","timestamp":"2024-05-07T11:52:26.906Z"}
 {"level":"info","message":"WalletAddress:","timestamp":"2024-05-07T11:52:26.906Z"}
+{"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:24:46.384Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:35:19.090Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"exp":1715121319,"iat":1715117719,"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:35:57.205Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"level":"info","message":"Nickname:","timestamp":"2024-05-07T21:35:57.205Z"}
+{"level":"info","message":"WalletAddress:","timestamp":"2024-05-07T21:35:57.206Z"}
+{"exp":1715121319,"iat":1715117719,"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:36:08.779Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"level":"info","message":"Nickname:","timestamp":"2024-05-07T21:36:08.779Z"}
+{"level":"info","message":"WalletAddress:","timestamp":"2024-05-07T21:36:08.779Z"}
+{"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:46:11.688Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"exp":1715121971,"iat":1715118371,"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-07T21:46:37.116Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
+{"level":"info","message":"Nickname:","timestamp":"2024-05-07T21:46:37.117Z"}
+{"level":"info","message":"WalletAddress:","timestamp":"2024-05-07T21:46:37.118Z"}
