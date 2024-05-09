@@ -1,10 +1,11 @@
 import express from 'express';
+import authenticateToken from '../middleware/auth';
 import { handleNotifications } from '../controller/notificationController';
 import { sendPushNotification } from '../fcm';
 
 const router = express.Router();
 
-router.post('/api/notifications', handleNotifications);
+router.post('/api/notifications', authenticateToken, handleNotifications);
 
 // API endpoint for sending push notifications
 router.post('/api/notifications/push', async (req, res) => {

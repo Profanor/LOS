@@ -82,10 +82,7 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
     if (userId !== req.user.userId) {
       return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
     }
-
     console.log('userId is:', userId);
-    
-
     next();
     }
   });
