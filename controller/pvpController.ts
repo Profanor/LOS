@@ -2,21 +2,7 @@ import { Request, Response } from "express";
 import { WebSocketWithNickname } from './webSocketController';
 import { wss } from './webSocketController'; // Import WebSocket server instance
 import Player from '../models/player';
-import winston from 'winston';
-
-const logger = winston.createLogger({
-  level: 'info', 
-  format: winston.format.combine( 
-          winston.format.timestamp(),
-          winston.format.json()
- ),
-  transports: [
-    new winston.transports.Console(), 
-    new winston.transports.File({ filename: 'error.log', level: 'error' }), 
-    new winston.transports.File({ filename: 'combined.log' }) 
-  ]
-});
-
+import logger from "../logger";
 
 export const sendPvpRequest = async (req: Request, res: Response) => {
     try {
