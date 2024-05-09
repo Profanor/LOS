@@ -60,7 +60,6 @@ const authenticateToken = (req, res, next) => {
                 // Extract and verify new token
                 const newToken = response.data.token;
                 const newDecodedToken = jsonwebtoken_1.default.verify(newToken, key);
-                console.log(newDecodedToken);
                 // Check new token payload for required user information
                 if (!newDecodedToken || !newDecodedToken.walletAddress || !newDecodedToken.nickname || !newDecodedToken.userId) {
                     logger.error('Invalid token or missing user information:', newDecodedToken);

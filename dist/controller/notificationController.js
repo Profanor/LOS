@@ -32,6 +32,7 @@ const handleNotifications = (req, res) => __awaiter(void 0, void 0, void 0, func
             default:
                 // Fallback to fetching all notifications if campaign type is not provided or invalid
                 response = yield fetchAllNotifications(walletAddress);
+                break;
         }
         res.json(response);
     }

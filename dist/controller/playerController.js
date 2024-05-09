@@ -288,11 +288,22 @@ const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const decodedToken = jsonwebtoken_1.default.verify(token, secretKey);
         // Extract user ID from decoded token
         const userId = decodedToken.userId;
+        // Retrieve user information from the database
+        const user = yield player_1.default.findById(userId);
+        if (!user || !user.isOnline) {
+            return res.status(401).json({ message: 'User is already logged out' });
+        }
         // Update player's isOnline status to false upon logout
-        const updateResult = yield player_1.default.updateOne({ _id: userId }, { $set: { isOnline: false } });
-        return res.status(200).json({ message: 'Logout successful' });
+        yield player_1.default.updateOne({ _id: userId }, { $set: { isOnline: false } });
+        // Include only the id and walletAddress fields in the response
+        const userPayload = { id: user.id, walletAddress: user.walletAddress };
+        return res.status(200).json({ message: 'You have logged out', user: userPayload });
     }
     catch (error) {
+        if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+            // Handle expired token error
+            return res.status(401).json({ message: 'Access denied. Token expired' });
+        }
         console.error('Error logging out player:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }

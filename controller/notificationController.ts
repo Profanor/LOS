@@ -36,6 +36,7 @@ export const handleNotifications = async (req: Request, res: Response) => {
           default:
             // Fallback to fetching all notifications if campaign type is not provided or invalid
             response = await fetchAllNotifications(walletAddress);
+            break;
         }
 
         res.json(response);
