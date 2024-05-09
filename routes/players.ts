@@ -16,6 +16,6 @@ router.get('/online-status/:walletAddress', getPlayerOnlineStatus);
 
 router.post('/api/players/addfriend', addFriend);
 
-router.post('/logout', logout);
+router.post('/logout', authenticateToken, logout);
     
 export default router;

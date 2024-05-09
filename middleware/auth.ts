@@ -42,7 +42,17 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
   jwt.verify(token, key, async (err: JsonWebTokenError | null, decodedToken: any) => {
     if (err) {
       logger.error('JWT verification failed:', err.message);
-      return res.status(401).json({ message: 'Invalid token' });
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'Access denied. Token expired' });
+      } else {
+        return res.status(401).json({ message: 'Access denied. Invalid token' });
+      }
+    }
+
+    // Check if the token's user identifier matches the user attempting the action
+    const userId = req.body.walletAddress; // Assuming the user identifier is passed in the request body
+    if (decodedToken.userId !== userId) {
+      return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
     }
 
     // Check token expiration and initiate token refresh if needed
