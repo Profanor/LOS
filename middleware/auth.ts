@@ -4,20 +4,7 @@ import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import axios from "axios";
 import dotenv from 'dotenv';
 dotenv.config(); 
-import winston from 'winston';
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
+import logger from "../logger";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -49,11 +36,8 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
       }
     }
 
-    // Check if the token's user identifier matches the user attempting the action
-    const userId = req.body.walletAddress; // Assuming the user identifier is passed in the request body
-    if (decodedToken.userId !== userId) {
-      return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
-    }
+    console.log('DecodedToken:', decodedToken);
+    
 
     // Check token expiration and initiate token refresh if needed
     const currentTime = Math.floor(Date.now() / 1000);
@@ -92,6 +76,16 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
     } else {
       // Token is valid and does not require refresh
       req.user = decodedToken;
+
+    // Check if the token's user identifier matches the user attempting the action
+    const userId = decodedToken.userId;
+    if (userId !== req.user.userId) {
+      return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
+    }
+
+    console.log('userId is:', userId);
+    
+
     next();
     }
   });

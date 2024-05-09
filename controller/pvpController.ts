@@ -98,6 +98,10 @@ export const handlePvpAction = async (req: Request, res: Response) => {
                 const elapsedTimeInSeconds = currentTimeInSeconds - requestTimeInSeconds;
                 if (elapsedTimeInSeconds > oneMinuteInSeconds) {
                   console.log(`PvP battle request from ${opponent.walletAddress} has expired (${elapsedTimeInSeconds} seconds elapsed).`);
+                  
+                  // Remove the expired request from the challenger's array
+                  player.notification_BattleRequest.challengers.splice(index, 1);
+                  await player.save();
                   return res.status(400).json({ error: 'PvP battle request has expired' });
                 }
               } else {
@@ -120,6 +124,7 @@ export const handlePvpAction = async (req: Request, res: Response) => {
            // Remove the challenger from the receivers challengers array
            player.notification_BattleRequest.challengers.splice(index, 1);
            break;
+
          case 'decline':
            // Remove the challenger from challengers array
            if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
@@ -128,6 +133,7 @@ export const handlePvpAction = async (req: Request, res: Response) => {
              return res.status(400).json({ error: 'Invalid index' });
            }
            break;
+
          case 'withdraw':
            // Remove the player from acceptedChallengers array
            if (player.notification_BattleRequest.acceptedChallengers && index < player.notification_BattleRequest.acceptedChallengers.length) {
