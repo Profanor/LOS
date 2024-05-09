@@ -35,10 +35,7 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
         return res.status(401).json({ message: 'Access denied. Invalid token' });
       }
     }
-
-    console.log('DecodedToken:', decodedToken);
     
-
     // Check token expiration and initiate token refresh if needed
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpiration = decodedToken.exp;
@@ -82,7 +79,6 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
     if (userId !== req.user.userId) {
       return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
     }
-    console.log('userId is:', userId);
     next();
     }
   });

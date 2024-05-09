@@ -21,6 +21,22 @@ const generateTokens = (tokenPayload: { userId: string; walletAddress: string; n
   return { token, refreshToken };
 };
 
+// Function to generate alternative nicknames
+const generateAlternativeNicknames = (nickname: string) => {
+  const alternatives = [];
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  for (let i = 0; i < 5; i++) {
+    let alternative = nickname;
+    for (let j = 0; j < 3; j++) {
+      alternative += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    alternatives.push(alternative);
+  }
+  
+  return alternatives;
+}
+
 
 export const signup = async (req: Request, res: Response) => {
     const { walletAddress, nickname } = req.body;
@@ -54,17 +70,6 @@ export const signup = async (req: Request, res: Response) => {
         return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
       };
 
-      // Function to generate alternative nicknames
-      const generateAlternativeNicknames = (nickname: string) => {
-        const alternatives = [];
-        // Example: Add random numbers or characters to the nickname
-        for (let i = 1; i <= 5; i++) {
-          const alternative = `${nickname}${i}`;
-          alternatives.push(alternative);
-        }
-        return alternatives;
-      }
-  
       // Check if nickname is already taken by another player
       const playerWithSameNickname = await Player.findOne({ nickname });
       if (playerWithSameNickname) {
