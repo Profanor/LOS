@@ -193,18 +193,6 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
         }
         // Log the token payload before sending it back
         logger.info('Token payload:', decodedToken);
-        // Log the presence of nickname and walletAddress in the token payload
-        if (decodedToken && decodedToken.walletAddress && decodedToken.nickname) {
-            logger.info('Nickname:', decodedToken.nickname);
-            logger.info('WalletAddress:', decodedToken.walletAddress);
-        }
-        else {
-            logger.error('Nickname or walletAddress missing in token payload:', decodedToken);
-        }
-        if (!decodedToken || !decodedToken.walletAddress || !decodedToken.nickname) {
-            logger.error('Invalid token or missing user information:', decodedToken);
-            return res.status(401).send('Invalid token or missing user information');
-        }
         const currentUserWalletAddress = decodedToken.walletAddress;
         const currentUserNickname = decodedToken.nickname;
         // Check if the current user is trying to search for themselves
@@ -220,9 +208,11 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
             query.walletAddress = walletAddress;
         }
         // Exclude the current user's data from the search
-        query.walletAddress = { $ne: currentUserWalletAddress };
-        // Use $or to search by either nickname or walletAddress
-        const players = yield player_1.default.find({ $or: [query] }).select('walletAddress');
+        if (walletAddress !== currentUserWalletAddress) {
+            query.walletAddress = { $ne: currentUserWalletAddress };
+        }
+        // Find players matching the query
+        const players = yield player_1.default.find(query).select('walletAddress');
         // Check if players array is empty
         if (players.length === 0) {
             return res.status(404).send('No players found');

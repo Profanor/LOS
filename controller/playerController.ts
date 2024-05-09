@@ -212,19 +212,6 @@ export const searchForPlayer = async (req: Request, res: Response) => {
     // Log the token payload before sending it back
     logger.info('Token payload:', decodedToken);
 
-    // Log the presence of nickname and walletAddress in the token payload
-    if (decodedToken && decodedToken.walletAddress && decodedToken.nickname) {
-      logger.info('Nickname:', decodedToken.nickname);
-      logger.info('WalletAddress:', decodedToken.walletAddress);
-    } else {
-      logger.error('Nickname or walletAddress missing in token payload:', decodedToken);
-    }
-    
-    if (!decodedToken || !decodedToken.walletAddress || !decodedToken.nickname) {
-      logger.error('Invalid token or missing user information:', decodedToken);
-      return res.status(401).send('Invalid token or missing user information');
-    }
-
     const currentUserWalletAddress = decodedToken.walletAddress;
     const currentUserNickname = decodedToken.nickname;
 
@@ -242,11 +229,13 @@ export const searchForPlayer = async (req: Request, res: Response) => {
       query.walletAddress = walletAddress;
     }
 
-   // Exclude the current user's data from the search
-   query.walletAddress = { $ne: currentUserWalletAddress };
+    // Exclude the current user's data from the search
+    if (walletAddress !== currentUserWalletAddress) {
+      query.walletAddress = { $ne: currentUserWalletAddress };
+    }
 
-    // Use $or to search by either nickname or walletAddress
-    const players = await Player.find({ $or: [query] }).select('walletAddress');
+    // Find players matching the query
+    const players = await Player.find(query).select('walletAddress');
 
     // Check if players array is empty
     if (players.length === 0) {

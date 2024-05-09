@@ -83,23 +83,23 @@ export const sendPvpRequest = async (req: Request, res: Response) => {
     }
   }
   
-  export const handlePvpAction = async (req: Request, res: Response) => {
-    try {
-       const { walletAddress, index, type } = req.body;
+export const handlePvpAction = async (req: Request, res: Response) => {
+  try {
+      const { walletAddress, index, type } = req.body;
    
-       // Find the player
-       const player = await Player.findOne({ walletAddress });
+      // Find the player
+      const player = await Player.findOne({ walletAddress });
    
-       // Check if player exists and has notification_BattleRequest
-       if (!player || !player.notification_BattleRequest) {
+      // Check if player exists and has notification_BattleRequest
+      if (!player || !player.notification_BattleRequest) {
          return res.status(404).json({ error: 'Player or notification_BattleRequest not found' });
-       }
+      }
    
-       // Handle the action based on the type (accept/decline/withdraw)
+      // Handle the action based on the type (accept/decline/withdraw)
        switch (type) {
-         case 'accept':
-           // Check if the opponent's data needs to be updated in the sender's acceptedChallengers array
-           if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
+        case 'accept':
+          // Check if the opponent's data needs to be updated in the sender's acceptedChallengers array
+          if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
              const opponent = player.notification_BattleRequest.challengers[index];
   
              const oneMinuteInSeconds = 60; // 1 minute in seconds
