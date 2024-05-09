@@ -104,3 +104,8 @@
 {"exp":1715253433,"iat":1715249833,"level":"info","message":"Token payload:","nickname":"ares","timestamp":"2024-05-09T10:19:59.732Z","userId":"663b62969b6d7a1c9e4808d1","walletAddress":"0x18bc5"}
 {"exp":1715250955,"iat":1715250055,"level":"info","message":"Token payload:","timestamp":"2024-05-09T10:21:25.294Z","userId":"663b62969b6d7a1c9e4808d1"}
 {"exp":1715250955,"iat":1715250055,"level":"info","message":"Token payload:","timestamp":"2024-05-09T10:21:58.036Z","userId":"663b62969b6d7a1c9e4808d1"}
+{"level":"info","message":"Token payload:","nickname":"eren","timestamp":"2024-05-09T12:18:04.682Z","userId":"663cbefc5e7f8479e924d283","walletAddress":"yaeger12"}
+{"level":"info","message":"Token payload:","nickname":"eren","timestamp":"2024-05-09T12:18:10.041Z","userId":"663cbefc5e7f8479e924d283","walletAddress":"yaeger12"}
+{"level":"info","message":"Token payload:","nickname":"mikasa","timestamp":"2024-05-09T12:18:41.387Z","userId":"663cbf215e7f8479e924d28a","walletAddress":"ackerman12"}
+{"level":"info","message":"Token payload:","nickname":"mikasa","timestamp":"2024-05-09T12:18:43.995Z","userId":"663cbf215e7f8479e924d28a","walletAddress":"ackerman12"}
+{"level":"info","message":"Token payload:","nickname":"select","timestamp":"2024-05-09T12:55:16.314Z","userId":"663a1a68dce84834ddf5e4b3","walletAddress":"dan12x"}
