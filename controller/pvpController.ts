@@ -83,87 +83,82 @@ export const sendPvpRequest = async (req: Request, res: Response) => {
     }
   }
   
-  
   export const handlePvpAction = async (req: Request, res: Response) => {
-      try {
-          const { walletAddress, index, type } = req.body;
+    try {
+       const { walletAddress, index, type } = req.body;
+   
+       // Find the player
+       const player = await Player.findOne({ walletAddress });
+   
+       // Check if player exists and has notification_BattleRequest
+       if (!player || !player.notification_BattleRequest) {
+         return res.status(404).json({ error: 'Player or notification_BattleRequest not found' });
+       }
+   
+       // Handle the action based on the type (accept/decline/withdraw)
+       switch (type) {
+         case 'accept':
+           // Check if the opponent's data needs to be updated in the sender's acceptedChallengers array
+           if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
+             const opponent = player.notification_BattleRequest.challengers[index];
   
-          // Find the player within a transaction
-          const session = await Player.startSession();
-          session.startTransaction();
-          try {
-              const player = await Player.findOne({ walletAddress }).session(session);
+             const oneMinuteInSeconds = 60; // 1 minute in seconds
   
-              if (!player || !player.notification_BattleRequest) {
-                  return res.status(404).json({ error: 'Player or notification_BattleRequest not found' });
+             // Check if the request has expired (1 minute timeout)
+             const requestTimestamp: Date | null | undefined = opponent.timestamp;
+              if (requestTimestamp) {
+                const currentTimeInSeconds = Math.floor(Date.now() / 1000); // Current time in seconds
+                const requestTimeInSeconds = Math.floor(requestTimestamp.getTime() / 1000); // Request time in seconds
+                const elapsedTimeInSeconds = currentTimeInSeconds - requestTimeInSeconds;
+                if (elapsedTimeInSeconds > oneMinuteInSeconds) {
+                  console.log(`PvP battle request from ${opponent.walletAddress} has expired (${elapsedTimeInSeconds} seconds elapsed).`);
+                  return res.status(400).json({ error: 'PvP battle request has expired' });
+                }
+              } else {
+                return res.status(400).json({ error: 'Invalid timestamp for PvP battle request' });
               }
   
-              switch (type) {
-                  case 'accept':
-                      if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
-                          const opponent = player.notification_BattleRequest.challengers[index];
-                          const oneMinuteInSeconds = 60;
-  
-                          const requestTimestamp = opponent.timestamp;
-                          if (requestTimestamp) {
-                              const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-                              const requestTimeInSeconds = Math.floor(requestTimestamp.getTime() / 1000);
-                              const elapsedTimeInSeconds = currentTimeInSeconds - requestTimeInSeconds;
-                              if (elapsedTimeInSeconds > oneMinuteInSeconds) {
-                                  console.log(`PvP battle request from ${opponent.walletAddress} has expired (${elapsedTimeInSeconds} seconds elapsed).`);
-                                  player.notification_BattleRequest.challengers.splice(index, 1);
-                                  await player.save();
-                                  await session.commitTransaction();
-                                  session.endSession();
-                                  return res.status(400).json({ error: 'PvP battle request has expired' });
-                              }
-                          } else {
-                              return res.status(400).json({ error: 'Invalid timestamp for PvP battle request' });
-                          }
-  
-                          const sender = await Player.findOne({ walletAddress: opponent.walletAddress }).session(session);
-                          if (sender && sender.notification_BattleRequest) {
-                              sender.notification_BattleRequest.acceptedChallengers.push({
-                                  walletAddress: player.walletAddress,
-                                  nickname: player.nickname
-                              });
-                              await sender.save();
-                          }
-                      } else {
-                          return res.status(400).json({ error: 'Invalid index' });
-                      }
-                      break;
-                  case 'decline':
-                      if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
-                          player.notification_BattleRequest.challengers.splice(index, 1);
-                      } else {
-                          return res.status(400).json({ error: 'Invalid index' });
-                      }
-                      break;
-                  case 'withdraw':
-                      if (player.notification_BattleRequest.acceptedChallengers && index < player.notification_BattleRequest.acceptedChallengers.length) {
-                          player.notification_BattleRequest.acceptedChallengers.splice(index, 1);
-                      } else {
-                          return res.status(400).json({ error: 'Invalid index' });
-                      }
-                      break;
-                  default:
-                      return res.status(400).json({ error: 'Invalid action type' });
-              }
-  
-              await player.save();
-              await session.commitTransaction();
-              session.endSession();
-              res.json({ message: `PVP battle request ${type}ed successfully` });
-          } catch (error) {
-              await session.abortTransaction();
-              session.endSession();
-              console.error('Error handling PVP battle request action:', error);
-              res.status(500).json({ error: 'Internal server error' });
-          }
-      } catch (error) {
-          console.error('Error handling PVP battle request action:', error);
-          res.status(500).json({ error: 'Internal server error' });
-      }
-  };
-  
+             // Find the sender and update their acceptedChallengers array
+             const sender = await Player.findOne({ walletAddress: opponent.walletAddress });
+             if (sender && sender.notification_BattleRequest) {
+                sender.notification_BattleRequest.acceptedChallengers.push({
+                walletAddress: player.walletAddress,
+                nickname: player.nickname
+               });
+               await sender.save();
+             }
+           } else {
+             return res.status(400).json({ error: 'Invalid index' });
+           }
+           
+           // Remove the challenger from the receivers challengers array
+           player.notification_BattleRequest.challengers.splice(index, 1);
+           break;
+         case 'decline':
+           // Remove the challenger from challengers array
+           if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
+             player.notification_BattleRequest.challengers.splice(index, 1);
+           } else {
+             return res.status(400).json({ error: 'Invalid index' });
+           }
+           break;
+         case 'withdraw':
+           // Remove the player from acceptedChallengers array
+           if (player.notification_BattleRequest.acceptedChallengers && index < player.notification_BattleRequest.acceptedChallengers.length) {
+             player.notification_BattleRequest.acceptedChallengers.splice(index, 1);
+           } else {
+             return res.status(400).json({ error: 'Invalid index' });
+           }
+           break;
+         default:
+           return res.status(400).json({ error: 'Invalid action type' });
+       }
+   
+       await player.save();
+   
+       res.json({ message: `PVP battle request ${type}ed successfully` });
+    } catch (error) {
+       logger.error('Error handling PVP battle request action:', error);
+       res.status(500).json({ error: 'Internal server error' });
+    }
+};
