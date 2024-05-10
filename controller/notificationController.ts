@@ -25,7 +25,7 @@ export const handleNotifications = async (req: AuthenticatedRequest, res: Respon
         // Verify authorization
         const tokenWalletAddress = req.user?.walletAddress;
         if (walletAddress !== tokenWalletAddress) {
-            return res.status(403).json({ error: 'Access denied. Wallet address does not match the token.' });
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
         }
     
         // Logic for different types of events

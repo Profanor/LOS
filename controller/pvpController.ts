@@ -5,9 +5,15 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import Player from '../models/player';
 import logger from "../logger";
 
-export const sendPvpRequest = async (req: Request, res: Response) => {
+export const sendPvpRequest = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { sendersWallet, receiver } = req.body;
+
+      // Verify authorization
+      const tokenWalletAddress = req.user?.walletAddress;
+      if (sendersWallet !== tokenWalletAddress) {
+          return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+      }
   
       // Validate input
       if (!sendersWallet && !receiver) {
@@ -70,9 +76,15 @@ export const sendPvpRequest = async (req: Request, res: Response) => {
     }
   }
   
-export const handlePvpAction = async (req: Request, res: Response) => {
+export const handlePvpAction = async (req: AuthenticatedRequest, res: Response) => {
   try {
       const { walletAddress, index, type } = req.body;
+
+      // Verify authorization
+      const tokenWalletAddress = req.user?.walletAddress;
+      if (walletAddress !== tokenWalletAddress) {
+          return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+      }
    
       // Find the player
       const player = await Player.findOne({ walletAddress });
