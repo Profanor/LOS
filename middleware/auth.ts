@@ -1,4 +1,4 @@
-import { Response, Request, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import crypto from 'crypto';
 import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import axios from "axios";
@@ -6,8 +6,11 @@ import dotenv from 'dotenv';
 dotenv.config(); 
 import logger from "../logger";
 
-interface AuthenticatedRequest extends Request {
-  user?: any;
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    walletAddress: string;
+    userId: string;
+  }
 }
 
 // Generate a random secret key of sufficient length
@@ -76,6 +79,10 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
 
     // Check if the token's user identifier matches the user attempting the action
     const userId = decodedToken.userId;
+    // Ensure req.user is defined
+    if (!req.user) {
+      return res.status(401).json({ message: 'Access denied. User not authenticated' });
+    }
     if (userId !== req.user.userId) {
       return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
     }

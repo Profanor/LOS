@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { WebSocketWithNickname } from './webSocketController';
 import { wss } from './webSocketController'; // Import WebSocket server instance
+import { AuthenticatedRequest } from '../middleware/auth';
 import Player from '../models/player';
 import logger from "../logger";
 

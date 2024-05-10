@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { AuthenticatedRequest } from '../middleware/auth';
 import Player from '../models/player';
 
 interface Notification {
@@ -17,9 +18,15 @@ interface PvpNotificationResponse {
     battleHistory: any[];
 }
 
-export const handleNotifications = async (req: Request, res: Response) => {
+export const handleNotifications = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { walletAddress, campaign } = req.body;
+
+        // Verify authorization
+        const tokenWalletAddress = req.user?.walletAddress;
+        if (walletAddress !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Wallet address does not match the token.' });
+        }
     
         // Logic for different types of events
         let response: any;
