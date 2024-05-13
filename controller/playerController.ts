@@ -33,7 +33,6 @@ const generateAlternativeNicknames = (nickname: string) => {
     }
     alternatives.push(alternative);
   }
-  
   return alternatives;
 }
 
@@ -199,9 +198,6 @@ export const searchForPlayer = async (req: Request, res: Response) => {
       logger.error('Error verifying JWT token:', error);
       return res.status(401).send('Invalid token or token verification failed');
     }
-
-    // Log the token payload before sending it back
-    logger.info('Token payload:', decodedToken);
 
     const currentUserWalletAddress = decodedToken.walletAddress;
     const currentUserNickname = decodedToken.nickname;

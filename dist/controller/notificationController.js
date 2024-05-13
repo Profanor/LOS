@@ -15,8 +15,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleNotifications = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const handleNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { walletAddress, campaign } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_a = req.user) === null || _a === void 0 ? void 0 : _a.walletAddress;
+        if (walletAddress !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
         // Logic for different types of events
         let response;
         switch (campaign) {

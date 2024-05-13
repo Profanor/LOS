@@ -15,19 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleRefresh = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("../logger"));
 const secretKey = process.env.SECRET_KEY;
 if (!secretKey) {
-    logger.error('Secret key is not provided. Please set the SECRET_KEY environment variable to a secure value.');
+    logger_1.default.error('Secret key is not provided. Please set the SECRET_KEY environment variable to a secure value.');
     process.exit(1); // Exit the process if secret key is not provided
 }
 const handleRefresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -50,7 +41,7 @@ const handleRefresh = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.json({ accessToken });
     }
     catch (error) {
-        logger.error('Token refresh error:', error.stack);
+        logger_1.default.error('Token refresh error:', error.stack);
         res.status(401).json({ error: 'Invalid refresh token' });
     }
 });

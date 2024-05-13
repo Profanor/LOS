@@ -17,16 +17,7 @@ const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("../logger"));
 // Function to generate a random secret key
 const generateSecretKey = () => {
     return crypto_1.default.randomBytes(32).toString('hex'); // Generate a 256-bit (32-byte) random string
@@ -39,6 +30,19 @@ const generateTokens = (tokenPayload) => {
     const refreshTokenPayload = { userId: tokenPayload.userId, walletAddress: tokenPayload.walletAddress, nickname: tokenPayload.nickname }; // Include walletAddress and nickname
     const refreshToken = jsonwebtoken_1.default.sign(refreshTokenPayload, secretKey, { expiresIn: '7d' });
     return { token, refreshToken };
+};
+// Function to generate alternative nicknames
+const generateAlternativeNicknames = (nickname) => {
+    const alternatives = [];
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 5; i++) {
+        let alternative = nickname;
+        for (let j = 0; j < 3; j++) {
+            alternative += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        alternatives.push(alternative);
+    }
+    return alternatives;
 };
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { walletAddress, nickname } = req.body;
@@ -62,20 +66,10 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
             const { token, refreshToken } = generateTokens(tokenPayload);
             // Log the token payload before sending it back
-            logger.info('Token payload:', tokenPayload);
+            logger_1.default.info('Token payload:', tokenPayload);
             return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
         }
         ;
-        // Function to generate alternative nicknames
-        const generateAlternativeNicknames = (nickname) => {
-            const alternatives = [];
-            // Example: Add random numbers or characters to the nickname
-            for (let i = 1; i <= 5; i++) {
-                const alternative = `${nickname}${i}`;
-                alternatives.push(alternative);
-            }
-            return alternatives;
-        };
         // Check if nickname is already taken by another player
         const playerWithSameNickname = yield player_1.default.findOne({ nickname });
         if (playerWithSameNickname) {
@@ -118,11 +112,11 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
         const { token, refreshToken } = generateTokens(tokenPayload);
         // Log the token payload before sending it back
-        logger.info('Token payload:', tokenPayload);
+        logger_1.default.info('Token payload:', tokenPayload);
         return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
     }
     catch (error) {
-        logger.error('Error creating player:', error);
+        logger_1.default.error('Error creating player:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -148,7 +142,7 @@ const switchCharacter = (req, res) => __awaiter(void 0, void 0, void 0, function
         return res.status(200).json({ message: 'Character NFT switched successfully' });
     }
     catch (error) {
-        logger.error('Error switching character NFT:', error);
+        logger_1.default.error('Error switching character NFT:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -165,7 +159,7 @@ const getBattleMeta = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         return res.status(200).json({ battleMeta });
     }
     catch (error) {
-        logger.error('Error getting battleMeta:', error);
+        logger_1.default.error('Error getting battleMeta:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -188,11 +182,9 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
             decodedToken = jsonwebtoken_1.default.verify(token, secretKey);
         }
         catch (error) {
-            logger.error('Error verifying JWT token:', error);
+            logger_1.default.error('Error verifying JWT token:', error);
             return res.status(401).send('Invalid token or token verification failed');
         }
-        // Log the token payload before sending it back
-        logger.info('Token payload:', decodedToken);
         const currentUserWalletAddress = decodedToken.walletAddress;
         const currentUserNickname = decodedToken.nickname;
         // Check if the current user is trying to search for themselves
@@ -220,7 +212,7 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.json(players);
     }
     catch (error) {
-        logger.error('Error searching for players:', error);
+        logger_1.default.error('Error searching for players:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -237,7 +229,7 @@ const getPlayerOnlineStatus = (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.json({ walletAddress: player.walletAddress, isOnline: player.isOnline });
     }
     catch (error) {
-        logger.error('Error getting player online status:', error);
+        logger_1.default.error('Error getting player online status:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -263,7 +255,7 @@ const addFriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.json({ message: 'Friend added successfully', friendFriendList });
     }
     catch (error) {
-        logger.error('Error adding friend:', error);
+        logger_1.default.error('Error adding friend:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -167,3 +167,40 @@ export const handlePvpAction = async (req: AuthenticatedRequest, res: Response) 
        res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+export const deleteAcceptedChallenger = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+      const { walletAddress, index } = req.body;
+
+      // Verify authorization
+      const tokenWalletAddress = req.user?.walletAddress;
+      if (walletAddress !== tokenWalletAddress) {
+          return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+      }
+
+      // Find the player
+      const player = await Player.findOne({ walletAddress });
+
+      // Check if player exists and has acceptedChallengers array
+      if (!player || !player.notification_BattleRequest || !player.notification_BattleRequest.acceptedChallengers) {
+        return res.status(404).json({ error: 'Player or acceptedChallengers not found' });
+      }
+
+      // Check if the provided index is valid
+      if (index < 0 || index >= player.notification_BattleRequest.acceptedChallengers.length) {
+        return res.status(400).json({ error: 'Invalid index' });
+      }
+
+      // Remove the entry at the specified index
+      player.notification_BattleRequest.acceptedChallengers.splice(index, 1);
+
+      // Save the updated player document
+      await player.save();
+      res.json({ message: 'Accepted challenger deleted successfully' });
+  }
+  catch (error) {
+    logger.error('Error deleting accepted challenger:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

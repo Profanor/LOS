@@ -17,16 +17,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const axios_1 = __importDefault(require("axios"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("../logger"));
 // Generate a random secret key of sufficient length
 const generateSecretKey = () => {
     return crypto_1.default.randomBytes(32).toString('hex'); // Generate a 256-bit (32-byte) random string
@@ -41,18 +32,13 @@ const authenticateToken = (req, res, next) => {
     // Verify token
     jsonwebtoken_1.default.verify(token, key, (err, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
-            logger.error('JWT verification failed:', err.message);
+            logger_1.default.error('JWT verification failed:', err.message);
             if (err.name === 'TokenExpiredError') {
                 return res.status(401).json({ message: 'Access denied. Token expired' });
             }
             else {
                 return res.status(401).json({ message: 'Access denied. Invalid token' });
             }
-        }
-        // Check if the token's user identifier matches the user attempting the action
-        const userId = req.body.walletAddress; // Assuming the user identifier is passed in the request body
-        if (decodedToken.userId !== userId) {
-            return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
         }
         // Check token expiration and initiate token refresh if needed
         const currentTime = Math.floor(Date.now() / 1000);
@@ -72,7 +58,7 @@ const authenticateToken = (req, res, next) => {
                 const newDecodedToken = jsonwebtoken_1.default.verify(newToken, key);
                 // Check new token payload for required user information
                 if (!newDecodedToken || !newDecodedToken.walletAddress || !newDecodedToken.nickname || !newDecodedToken.userId) {
-                    logger.error('Invalid token or missing user information:', newDecodedToken);
+                    logger_1.default.error('Invalid token or missing user information:', newDecodedToken);
                     return res.status(401).send('Invalid token or missing user information');
                 }
                 // Update token in request headers
@@ -80,13 +66,22 @@ const authenticateToken = (req, res, next) => {
                 next();
             }
             catch (error) {
-                logger.error('Token refresh error:', error);
+                logger_1.default.error('Token refresh error:', error);
                 return res.status(500).json({ error: 'Token refresh failed' });
             }
         }
         else {
             // Token is valid and does not require refresh
             req.user = decodedToken;
+            // Check if the token's user identifier matches the user attempting the action
+            const userId = decodedToken.userId;
+            // Ensure req.user is defined
+            if (!req.user) {
+                return res.status(401).json({ message: 'Access denied. User not authenticated' });
+            }
+            if (userId !== req.user.userId) {
+                return res.status(403).json({ message: 'Access denied. Token does not belong to the user' });
+            }
             next();
         }
     }));

@@ -12,9 +12,9 @@ router.post('/api/players/get-battle-meta', authenticateToken, getBattleMeta);
 
 router.post('/api/players/search', authenticateToken, searchForPlayer);
 
-router.get('/online-status/:walletAddress', getPlayerOnlineStatus);
+router.get('/online-status/:walletAddress', authenticateToken, getPlayerOnlineStatus);
 
-router.post('/api/players/addfriend', addFriend);
+router.post('/api/players/addfriend', authenticateToken, addFriend);
 
 router.post('/logout', authenticateToken, logout);
     

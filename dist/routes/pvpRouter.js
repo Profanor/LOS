@@ -9,4 +9,5 @@ const router = express_1.default.Router();
 const pvpController_1 = require("../controller/pvpController");
 router.post('/api/pvp/request', auth_1.default, pvpController_1.sendPvpRequest);
 router.post('/api/pvp/action', auth_1.default, pvpController_1.handlePvpAction);
+router.post('/api/pvp/delete-accepted-challenger', auth_1.default, pvpController_1.deleteAcceptedChallenger);
 exports.default = router;

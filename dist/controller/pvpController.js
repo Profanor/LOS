@@ -12,22 +12,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handlePvpAction = exports.sendPvpRequest = void 0;
+exports.deleteAcceptedChallenger = exports.handlePvpAction = exports.sendPvpRequest = void 0;
 const webSocketController_1 = require("./webSocketController"); // Import WebSocket server instance
 const player_1 = __importDefault(require("../models/player"));
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("../logger"));
 const sendPvpRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { sendersWallet, receiver } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_a = req.user) === null || _a === void 0 ? void 0 : _a.walletAddress;
+        if (sendersWallet !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
         // Validate input
         if (!sendersWallet && !receiver) {
             return res.status(400).json({ error: 'Either walletAddress or nickname is required' });
@@ -75,14 +72,20 @@ const sendPvpRequest = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.json({ message: 'PVP battle request sent successfully', sender: sender ? sender.walletAddress : null, opponent: opponent.walletAddress });
     }
     catch (error) {
-        logger.error('Error sending PVP battle request:', error);
+        logger_1.default.error('Error sending PVP battle request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 exports.sendPvpRequest = sendPvpRequest;
 const handlePvpAction = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
     try {
         const { walletAddress, index, type } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_b = req.user) === null || _b === void 0 ? void 0 : _b.walletAddress;
+        if (walletAddress !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
         // Find the player
         const player = yield player_1.default.findOne({ walletAddress });
         // Check if player exists and has notification_BattleRequest
@@ -104,6 +107,9 @@ const handlePvpAction = (req, res) => __awaiter(void 0, void 0, void 0, function
                         const elapsedTimeInSeconds = currentTimeInSeconds - requestTimeInSeconds;
                         if (elapsedTimeInSeconds > oneMinuteInSeconds) {
                             console.log(`PvP battle request from ${opponent.walletAddress} has expired (${elapsedTimeInSeconds} seconds elapsed).`);
+                            // Remove the expired request from the challenger's array
+                            player.notification_BattleRequest.challengers.splice(index, 1);
+                            yield player.save();
                             return res.status(400).json({ error: 'PvP battle request has expired' });
                         }
                     }
@@ -151,8 +157,39 @@ const handlePvpAction = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.json({ message: `PVP battle request ${type}ed successfully` });
     }
     catch (error) {
-        logger.error('Error handling PVP battle request action:', error);
+        logger_1.default.error('Error handling PVP battle request action:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 exports.handlePvpAction = handlePvpAction;
+const deleteAcceptedChallenger = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c;
+    try {
+        const { walletAddress, index } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_c = req.user) === null || _c === void 0 ? void 0 : _c.walletAddress;
+        if (walletAddress !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
+        // Find the player
+        const player = yield player_1.default.findOne({ walletAddress });
+        // Check if player exists and has acceptedChallengers array
+        if (!player || !player.notification_BattleRequest || !player.notification_BattleRequest.acceptedChallengers) {
+            return res.status(404).json({ error: 'Player or acceptedChallengers not found' });
+        }
+        // Check if the provided index is valid
+        if (index < 0 || index >= player.notification_BattleRequest.acceptedChallengers.length) {
+            return res.status(400).json({ error: 'Invalid index' });
+        }
+        // Remove the entry at the specified index
+        player.notification_BattleRequest.acceptedChallengers.splice(index, 1);
+        // Save the updated player document
+        yield player.save();
+        res.json({ message: 'Accepted challenger deleted successfully' });
+    }
+    catch (error) {
+        logger_1.default.error('Error deleting accepted challenger:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.deleteAcceptedChallenger = deleteAcceptedChallenger;

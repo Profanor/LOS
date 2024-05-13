@@ -5,16 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wss = exports.initializeWebSocket = void 0;
 const ws_1 = __importDefault(require("ws"));
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("../logger"));
 // Store WebSocket server instance
 let wss;
 const initializeWebSocket = (port) => {
@@ -35,7 +26,7 @@ const initializeWebSocket = (port) => {
         console.log(`WebSocket server is running on port ${port}`);
     }
     catch (error) {
-        logger.error('Error initializing WebSocket server:', error);
+        logger_1.default.error('Error initializing WebSocket server:', error);
     }
     return wss;
 };

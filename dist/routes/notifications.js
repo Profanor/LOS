@@ -13,10 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../middleware/auth"));
 const notificationController_1 = require("../controller/notificationController");
 const fcm_1 = require("../fcm");
 const router = express_1.default.Router();
-router.post('/api/notifications', notificationController_1.handleNotifications);
+router.post('/api/notifications', auth_1.default, notificationController_1.handleNotifications);
 // API endpoint for sending push notifications
 router.post('/api/notifications/push', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

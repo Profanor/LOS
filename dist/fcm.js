@@ -38,16 +38,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendPushNotification = void 0;
 const admin = __importStar(require("firebase-admin"));
 const player_1 = __importDefault(require("./models/player"));
-const winston_1 = __importDefault(require("winston"));
-const logger = winston_1.default.createLogger({
-    level: 'info',
-    format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
-    transports: [
-        new winston_1.default.transports.Console(),
-        new winston_1.default.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston_1.default.transports.File({ filename: 'combined.log' })
-    ]
-});
+const logger_1 = __importDefault(require("./logger"));
 // Initialize Firebase Admin SDK with your service account credentials
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -58,13 +49,13 @@ const sendPushNotification = (playerWalletAddress, message) => __awaiter(void 0,
         // Find the player using the wallet address
         const player = yield player_1.default.findOne({ walletAddress: playerWalletAddress });
         if (!player) {
-            logger.error('Player not found');
+            logger_1.default.error('Player not found');
             return;
         }
         const registrationToken = player.registrationToken;
         // Check if registrationToken is available
         if (!registrationToken) {
-            logger.error('Registration token not found for player:', playerWalletAddress);
+            logger_1.default.error('Registration token not found for player:', playerWalletAddress);
             return;
         }
         // Define the payload for the push notification
@@ -84,7 +75,7 @@ const sendPushNotification = (playerWalletAddress, message) => __awaiter(void 0,
         console.log('Push notification sent successfully');
     }
     catch (error) {
-        logger.error('Error sending push notification:', error);
+        logger_1.default.error('Error sending push notification:', error);
     }
 });
 exports.sendPushNotification = sendPushNotification;
