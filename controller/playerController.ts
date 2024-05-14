@@ -1,9 +1,11 @@
 import { Response, Request } from "express";
+import { AuthenticatedRequest } from '../middleware/auth';
 import Player from '../models/player';
 import FriendList from '../models/friendList';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import logger from "../logger";
+import mongoose from "mongoose";
 
 // Function to generate a random secret key
 const generateSecretKey = (): string => {
@@ -257,35 +259,53 @@ export const getPlayerOnlineStatus = async (req: Request, res: Response) => {
 }
 
 
-export const addFriend = async (req: Request, res: Response) => {
+export const addFriend = async (req: AuthenticatedRequest, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
-    const { playerId, friendId } = req.body;
+    const { playersWallet, friendsWallet } = req.body;
+
+    // Verify authorization
+    const tokenWalletAddress = req.user?.walletAddress;
+    if (playersWallet !== tokenWalletAddress) {
+        return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+    }
 
     // Check if both player and friend exist
-    const player = await Player.findById(playerId);
-    const friend = await Player.findById(friendId);
+    const player = await Player.findOne({ walletAddress: playersWallet }).session(session);
+    const friend = await Player.findOne({ walletAddress: playersWallet }).session(session);
     if (!player || !friend) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ error: 'Player or friend not found' });
     }
 
     // Check if they are already friends
-    if (player.friends.includes(friendId)) {
-      return res.status(400).json({ error: 'Already friends' });
+    if (player.friends.includes(friendsWallet)) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ error: 'You are already friends' });
     }
 
     // Add friend to player's friend list
-    player.friends.push(friendId);
+    player.friends.push(friendsWallet);
     await player.save();
 
     // Update friend's friend list
-    const friendFriendList = await FriendList.findOneAndUpdate(
-      { player: friendId },
-      { $push: { friends: playerId } },
-      { upsert: true, new: true }
+    const friendList = await FriendList.findOneAndUpdate(
+      { playerWallet: friendsWallet },
+      { $push: { friends: playersWallet } },
+      { upsert: true, new: true, session }
     );
 
-    res.json({ message: 'Friend added successfully', friendFriendList });
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({ message: 'Friend added successfully', friendList });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     logger.error('Error adding friend:', error);
     res.status(500).json({ error: 'Internal server error' });
   }

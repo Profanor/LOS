@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const friendListSchema = new mongoose.Schema({
-    player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
-    friend: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+    playerWallet: { type: String, ref: 'Player' },
+    friendWallet: { type: String, ref: 'Player' },
 });
 
 const FriendList = mongoose.model("Friend", friendListSchema);

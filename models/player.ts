@@ -48,7 +48,7 @@ const playerSchema = new mongoose.Schema({
     required: false
   },
   // Add reference to Friend model
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Friend' }],
+  friends: [{ type: String, ref: 'FriendList' }],
 });
 
 const Player = mongoose.model('Player', playerSchema);
