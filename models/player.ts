@@ -47,8 +47,20 @@ const playerSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  friendRequests: [{
+    senderWallet: String,
+    senderNickname: String,
+    timestamp: Date,
+    status: { type: String, enum: ['Pending', 'Accepted', 'Declined'], default: 'Pending' }
+  }],
+  friendRequestNotifications: [{
+    senderWallet: String,
+    receiverWallet: String,
+    status: { type: String, enum: ['Pending', 'Accepted', 'Declined'] },
+    timestamp: { type: Date, default: Date.now }
+  }],
   // Add reference to Friend model
-  friends: [{ type: String, ref: 'FriendList' }],
+  friends: [{ type: String, ref: 'Player' }],
 });
 
 const Player = mongoose.model('Player', playerSchema);

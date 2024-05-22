@@ -1,6 +1,6 @@
 import authenticateToken from '../middleware/auth';
 import express from 'express';
-import { signup,switchCharacter,getBattleMeta,searchForPlayer,getPlayerOnlineStatus,addFriend,logout} from '../controller/playerController';
+import { signup,switchCharacter,getBattleMeta,searchForPlayer,getPlayerOnlineStatus,logout} from '../controller/playerController';
 
 const router = express.Router();
 
@@ -13,8 +13,6 @@ router.post('/api/players/get-battle-meta', authenticateToken, getBattleMeta);
 router.post('/api/players/search', authenticateToken, searchForPlayer);
 
 router.get('/online-status/:walletAddress', authenticateToken, getPlayerOnlineStatus);
-
-router.post('/api/players/addfriend', authenticateToken, addFriend);
 
 router.post('/logout', authenticateToken, logout);
     

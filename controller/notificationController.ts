@@ -10,6 +10,9 @@ interface Notification {
 interface PlayerDocument {
     walletAddress: string;
     notifications: Notification[]; 
+    friendRequests: any[];
+    notification_BattleRequest?: any;
+    battleLog?: any[];
 }
   
 interface PvpNotificationResponse {

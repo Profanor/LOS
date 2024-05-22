@@ -12,6 +12,5 @@ router.post('/api/players/switch-character', auth_1.default, playerController_1.
 router.post('/api/players/get-battle-meta', auth_1.default, playerController_1.getBattleMeta);
 router.post('/api/players/search', auth_1.default, playerController_1.searchForPlayer);
 router.get('/online-status/:walletAddress', auth_1.default, playerController_1.getPlayerOnlineStatus);
-router.post('/api/players/addfriend', auth_1.default, playerController_1.addFriend);
 router.post('/logout', auth_1.default, playerController_1.logout);
 exports.default = router;

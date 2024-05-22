@@ -12,12 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.addFriend = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.getSentFriendRequests = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../logger"));
+const webSocketController_1 = require("./webSocketController");
 // Function to generate a random secret key
 const generateSecretKey = () => {
     return crypto_1.default.randomBytes(32).toString('hex'); // Generate a 256-bit (32-byte) random string
@@ -234,32 +236,224 @@ const getPlayerOnlineStatus = (req, res) => __awaiter(void 0, void 0, void 0, fu
     }
 });
 exports.getPlayerOnlineStatus = getPlayerOnlineStatus;
-const addFriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
     try {
-        const { playerId, friendId } = req.body;
+        const { playersWallet, friendsNickname } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_b = req.user) === null || _b === void 0 ? void 0 : _b.walletAddress;
+        if (playersWallet !== tokenWalletAddress) {
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
         // Check if both player and friend exist
-        const player = yield player_1.default.findById(playerId);
-        const friend = yield player_1.default.findById(friendId);
+        const player = yield player_1.default.findOne({ walletAddress: playersWallet }).session(session);
+        const friend = yield player_1.default.findOne({ nickname: friendsNickname }).session(session);
         if (!player || !friend) {
+            yield session.abortTransaction();
+            session.endSession();
             return res.status(404).json({ error: 'Player or friend not found' });
         }
-        // Check if they are already friends
-        if (player.friends.includes(friendId)) {
-            return res.status(400).json({ error: 'Already friends' });
+        // Check if friend request already exists
+        const existingRequest = yield friendList_1.default.findOne({ playerWallet: playersWallet, friendWallet: friend.walletAddress }).session(session);
+        if (existingRequest) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ error: 'Friend request already sent' });
         }
-        // Add friend to player's friend list
-        player.friends.push(friendId);
-        yield player.save();
-        // Update friend's friend list
-        const friendFriendList = yield friendList_1.default.findOneAndUpdate({ player: friendId }, { $push: { friends: playerId } }, { upsert: true, new: true });
-        res.json({ message: 'Friend added successfully', friendFriendList });
+        // Create friend request
+        const friendRequest = new friendList_1.default({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
+        yield friendRequest.save({ session });
+        // Add the friend request to the friend's notifications
+        // friend.friendRequests.push({
+        //   senderNickname: player.nickname,
+        //   timestamp: new Date(),
+        //   status: 'Pending'
+        // });
+        // await friend.save({ session });
+        // Notify receiver via websocket
+        const notification = {
+            type: 'friend_request',
+            sender: player.walletAddress,
+            message: `You have a new friend request from ${player.nickname}`,
+            timestamp: Date.now()
+        };
+        webSocketController_1.wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.nickname === friend.nickname) {
+                client.send(JSON.stringify(notification));
+            }
+        });
+        yield session.commitTransaction();
+        session.endSession();
+        res.json({ message: 'Friend request sent successfully', requestId: friendRequest._id, status: friendRequest.status });
     }
     catch (error) {
-        logger_1.default.error('Error adding friend:', error);
+        yield session.abortTransaction();
+        session.endSession();
+        logger_1.default.error('Error sending friend request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-exports.addFriend = addFriend;
+exports.sendFriendRequest = sendFriendRequest;
+const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
+    try {
+        const { receiverWallet, requestId } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_c = req.user) === null || _c === void 0 ? void 0 : _c.walletAddress;
+        if (receiverWallet !== tokenWalletAddress) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
+        // Find the friend request by ID
+        const friendRequest = yield friendList_1.default.findById(requestId).session(session);
+        if (!friendRequest || friendRequest.friendWallet !== receiverWallet) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Friend request not found' });
+        }
+        // Update the friend request status to 'Accepted'
+        friendRequest.status = 'Accepted';
+        yield friendRequest.save({ session });
+        // Add each other to the friends list
+        const receiver = yield player_1.default.findOne({ walletAddress: receiverWallet }).session(session);
+        const sender = yield player_1.default.findOne({ walletAddress: friendRequest.playerWallet }).session(session);
+        if (!receiver || !sender) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        receiver.friends.push(sender.walletAddress);
+        sender.friends.push(receiver.walletAddress);
+        // Remove the friend request from the sender's friendRequests list
+        sender.friendRequests = sender.friendRequests.filter(req => {
+            return req._id && req._id.toString() !== requestId;
+        });
+        // Add a friend request notification to the sender
+        sender.friendRequestNotifications.push({
+            receiverNickname: receiver.nickname,
+            status: 'Accepted',
+            timestamp: new Date()
+        });
+        yield receiver.save({ session });
+        yield sender.save({ session });
+        // Notify sender via websocket
+        const notification = {
+            type: 'friend_request_accepted',
+            receiver: receiver.walletAddress,
+            message: `${receiver.nickname} has accepted your friend request.`,
+            timestamp: Date.now()
+        };
+        webSocketController_1.wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.nickname === sender.nickname) {
+                client.send(JSON.stringify(notification));
+            }
+        });
+        yield session.commitTransaction();
+        session.endSession();
+        res.json({ message: 'Friend request accepted successfully' });
+    }
+    catch (error) {
+        yield session.abortTransaction();
+        session.endSession();
+        logger_1.default.error('Error accepting friend request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.acceptFriendRequest = acceptFriendRequest;
+const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
+    try {
+        const { receiverWallet, requestId } = req.body;
+        // Verify authorization
+        const tokenWalletAddress = (_d = req.user) === null || _d === void 0 ? void 0 : _d.walletAddress;
+        if (receiverWallet !== tokenWalletAddress) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({ error: 'Access denied. Please use your wallet address.' });
+        }
+        // Find the friend request by ID
+        const friendRequest = yield friendList_1.default.findById(requestId).session(session);
+        if (!friendRequest || friendRequest.friendWallet !== receiverWallet) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Friend request not found' });
+        }
+        // Update the senders friend request status to 'Declined'
+        friendRequest.status = 'Declined';
+        yield friendRequest.save({ session });
+        // find sender and receiver
+        const receiver = yield player_1.default.findOne({ walletAddress: receiverWallet }).session(session);
+        const sender = yield player_1.default.findOne({ walletAddress: friendRequest.playerWallet }).session(session);
+        if (!receiver || !sender) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        // Notify sender via websocket and save notification in sender's player document
+        const notification = {
+            type: 'friend_request_declined',
+            receiver: receiver.walletAddress,
+            message: `${receiver.nickname} has declined your friend request.`,
+            timestamp: Date.now()
+        };
+        sender.friendRequestNotifications.push({
+            receiverNickname: receiver.nickname,
+            status: 'Declined',
+            timestamp: new Date()
+        });
+        yield sender.save({ session });
+        webSocketController_1.wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN && client.nickname === sender.nickname) {
+                client.send(JSON.stringify(notification));
+            }
+        });
+        yield session.commitTransaction();
+        session.endSession();
+        res.json({ message: 'Friend request declined successfully' });
+    }
+    catch (error) {
+        yield session.abortTransaction();
+        session.endSession();
+        logger_1.default.error('Error declining friend request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.declineFriendRequest = declineFriendRequest;
+const getSentFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _e;
+    try {
+        const walletAddress = (_e = req.user) === null || _e === void 0 ? void 0 : _e.walletAddress;
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Wallet address is required' });
+        }
+        // Find the player by wallet address
+        const player = yield player_1.default.findOne({ walletAddress });
+        if (!player) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        // Fetch sent friend requests with their statuses
+        const sentRequests = yield friendList_1.default.find({ playerWallet: walletAddress });
+        // Extract relevant information
+        const sentRequestsInfo = sentRequests.map(request => ({
+            friendWallet: request.friendWallet,
+            status: request.status,
+            timestamp: request.timestamp
+        }));
+        res.json({ sentRequests: sentRequestsInfo });
+    }
+    catch (error) {
+        console.error('Error fetching sent friend requests:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.getSentFriendRequests = getSentFriendRequests;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];

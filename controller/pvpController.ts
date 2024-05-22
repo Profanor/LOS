@@ -76,6 +76,7 @@ export const sendPvpRequest = async (req: AuthenticatedRequest, res: Response) =
     }
   }
   
+
 export const handlePvpAction = async (req: AuthenticatedRequest, res: Response) => {
   try {
       const { walletAddress, index, type } = req.body;
