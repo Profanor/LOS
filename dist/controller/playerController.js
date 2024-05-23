@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getSentFriendRequests = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.getSentFriendRequests = exports.unfriend = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -426,10 +426,42 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.declineFriendRequest = declineFriendRequest;
-const getSentFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const unfriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _e;
     try {
+        const { friendWallet } = req.body;
         const walletAddress = (_e = req.user) === null || _e === void 0 ? void 0 : _e.walletAddress;
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Wallet address is required' });
+        }
+        // Find the current player
+        const currentPlayer = yield player_1.default.findOne({ walletAddress });
+        if (!currentPlayer) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        // Find the friend to unfriend
+        const friendPlayer = yield player_1.default.findOne({ walletAddress: friendWallet });
+        if (!friendPlayer) {
+            return res.status(404).json({ error: 'Friend not found' });
+        }
+        // Remove friend from each other's friend list
+        currentPlayer.friends = currentPlayer.friends.filter(friend => friend !== friendWallet);
+        friendPlayer.friends = friendPlayer.friends.filter(friend => friend !== walletAddress);
+        // Save changes
+        yield currentPlayer.save();
+        yield friendPlayer.save();
+        res.json({ message: 'Successfully unfriended' });
+    }
+    catch (error) {
+        logger_1.default.error('Error unfriending:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.unfriend = unfriend;
+const getSentFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _f;
+    try {
+        const walletAddress = (_f = req.user) === null || _f === void 0 ? void 0 : _f.walletAddress;
         if (!walletAddress) {
             return res.status(400).json({ error: 'Wallet address is required' });
         }

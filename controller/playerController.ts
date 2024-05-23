@@ -485,6 +485,45 @@ export const declineFriendRequest = async (req: AuthenticatedRequest, res: Respo
 };
 
 
+export const unfriend = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { friendWallet } = req.body;
+    const walletAddress = req.user?.walletAddress;
+
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    // Find the current player
+    const currentPlayer = await Player.findOne({ walletAddress });
+
+    if (!currentPlayer) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    // Find the friend to unfriend
+    const friendPlayer = await Player.findOne({ walletAddress: friendWallet });
+
+    if (!friendPlayer) {
+      return res.status(404).json({ error: 'Friend not found' });
+    }
+
+    // Remove friend from each other's friend list
+    currentPlayer.friends = currentPlayer.friends.filter(friend => friend !== friendWallet);
+    friendPlayer.friends = friendPlayer.friends.filter(friend => friend !== walletAddress);
+
+    // Save changes
+    await currentPlayer.save();
+    await friendPlayer.save();
+
+    res.json({ message: 'You are no longer friends' });
+  } catch (error) {
+    logger.error('Error unfriending:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
 export const getSentFriendRequests = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const walletAddress = req.user?.walletAddress;
