@@ -266,12 +266,12 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const friendRequest = new friendList_1.default({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
         yield friendRequest.save({ session });
         // Add the friend request to the friend's notifications
-        // friend.friendRequests.push({
-        //   senderNickname: player.nickname,
-        //   timestamp: new Date(),
-        //   status: 'Pending'
-        // });
-        // await friend.save({ session });
+        friend.friendRequests.push({
+            senderNickname: player.nickname,
+            timestamp: new Date(),
+            status: 'Pending'
+        });
+        yield friend.save({ session });
         // Notify receiver via websocket
         const notification = {
             type: 'friend_request',
@@ -450,7 +450,7 @@ const unfriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Save changes
         yield currentPlayer.save();
         yield friendPlayer.save();
-        res.json({ message: 'Successfully unfriended' });
+        res.json({ message: 'You are no longer friends' });
     }
     catch (error) {
         logger_1.default.error('Error unfriending:', error);

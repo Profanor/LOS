@@ -296,13 +296,13 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
     const friendRequest = new FriendList({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
     await friendRequest.save({ session });
 
-    // Add the friend request to the friend's notifications
-    // friend.friendRequests.push({
-    //   senderNickname: player.nickname,
-    //   timestamp: new Date(),
-    //   status: 'Pending'
-    // });
-    // await friend.save({ session });
+    // Add the friend request to the receiver's friendRequests array
+      friend.friendRequests.push({
+      senderNickname: player.nickname,
+      timestamp: new Date(),
+      status: 'Pending'
+    });
+      await friend.save({ session });
 
     // Notify receiver via websocket
     const notification = {
@@ -370,8 +370,18 @@ export const acceptFriendRequest = async (req: AuthenticatedRequest, res: Respon
     sender.friends.push(receiver.walletAddress);
 
     // Remove the friend request from the sender's friendRequests list
-    sender.friendRequests = sender.friendRequests.filter(req => {
-      return req._id && req._id.toString() !== requestId;
+    // sender.friendRequests = sender.friendRequests.filter(req => {
+    //   return req._id && req._id.toString() !== requestId;
+    // }) as mongoose.Types.DocumentArray<{
+    //   status: "Pending" | "Accepted" | "Declined";
+    //   timestamp?: Date | null | undefined;
+    //   senderWallet?: string | null | undefined;
+    //   senderNickname?: string | null | undefined;
+    // }>;
+
+    // Remove the friend request from the receiver's friendRequests array
+    receiver.friendRequests = receiver.friendRequests.filter(req => {
+      return !(req.senderNickname === sender.nickname && req.status === 'Pending');
     }) as mongoose.Types.DocumentArray<{
       status: "Pending" | "Accepted" | "Declined";
       timestamp?: Date | null | undefined;
