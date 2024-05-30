@@ -10,6 +10,7 @@ const router = express_1.default.Router();
 router.post('/send', auth_1.default, playerController_1.sendFriendRequest);
 router.post('/accept', auth_1.default, playerController_1.acceptFriendRequest);
 router.get('/status', auth_1.default, playerController_1.getSentFriendRequests);
+router.get('/friend-requests', auth_1.default, playerController_1.getFriendRequests);
 router.post('/decline', auth_1.default, playerController_1.declineFriendRequest);
 router.post('/unfriend', auth_1.default, playerController_1.unfriend);
 exports.default = router;

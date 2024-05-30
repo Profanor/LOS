@@ -567,6 +567,31 @@ export const getSentFriendRequests = async (req: AuthenticatedRequest, res: Resp
 };
 
 
+export const getFriendRequests = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const walletAddress = req.user?.walletAddress;
+
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    // Find the player by wallet address
+    const player = await Player.findOne({ walletAddress });
+
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    const friendRequests = player.friendRequests;
+    res.json({friendRequests});
+
+  } catch (error) {
+    console.error('Error fetching friend requests list:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
 export const logout = async (req: Request, res: Response) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];

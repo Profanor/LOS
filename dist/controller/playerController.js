@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getSentFriendRequests = exports.unfriend = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.getFriendRequests = exports.getSentFriendRequests = exports.unfriend = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -265,7 +265,7 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
         // Create friend request
         const friendRequest = new friendList_1.default({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
         yield friendRequest.save({ session });
-        // Add the friend request to the friend's notifications
+        // Add the friend request to the receiver's friendRequests array
         friend.friendRequests.push({
             senderNickname: player.nickname,
             timestamp: new Date(),
@@ -330,8 +330,17 @@ const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, func
         receiver.friends.push(sender.walletAddress);
         sender.friends.push(receiver.walletAddress);
         // Remove the friend request from the sender's friendRequests list
-        sender.friendRequests = sender.friendRequests.filter(req => {
-            return req._id && req._id.toString() !== requestId;
+        // sender.friendRequests = sender.friendRequests.filter(req => {
+        //   return req._id && req._id.toString() !== requestId;
+        // }) as mongoose.Types.DocumentArray<{
+        //   status: "Pending" | "Accepted" | "Declined";
+        //   timestamp?: Date | null | undefined;
+        //   senderWallet?: string | null | undefined;
+        //   senderNickname?: string | null | undefined;
+        // }>;
+        // Remove the friend request from the receiver's friendRequests array
+        receiver.friendRequests = receiver.friendRequests.filter(req => {
+            return !(req.senderNickname === sender.nickname && req.status === 'Pending');
         });
         // Add a friend request notification to the sender
         sender.friendRequestNotifications.push({
@@ -486,6 +495,27 @@ const getSentFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, fu
     }
 });
 exports.getSentFriendRequests = getSentFriendRequests;
+const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _g;
+    try {
+        const walletAddress = (_g = req.user) === null || _g === void 0 ? void 0 : _g.walletAddress;
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Wallet address is required' });
+        }
+        // Find the player by wallet address
+        const player = yield player_1.default.findOne({ walletAddress });
+        if (!player) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        const friendRequest = player.friendRequests;
+        res.json({ friendRequest });
+    }
+    catch (error) {
+        console.error('Error fetching friend requests list:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.getFriendRequests = getFriendRequests;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
