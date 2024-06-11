@@ -227,14 +227,14 @@ export const searchForPlayer = async (req: Request, res: Response) => {
     }
 
     // Find players matching the query
-    const players = await Player.find(query).select('walletAddress');
+    const player = await Player.findOne(query).select('walletAddress');
 
-    // Check if players array is empty
-    if (players.length === 0) {
-      return res.status(404).send('No players found');
+    // Check if player is found
+    if (!player) {
+      return res.status(404).send('No player found');
     }
 
-    res.json(players);
+    res.json(player);
   } catch (error) {
     logger.error('Error searching for players:', error);
     res.status(500).json({ error: 'Internal server error' });

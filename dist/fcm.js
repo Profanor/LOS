@@ -72,7 +72,7 @@ const sendPushNotification = (playerWalletAddress, message) => __awaiter(void 0,
         };
         // Send the push notification using Firebase Admin SDK
         yield admin.messaging().send(fcmMessage);
-        console.log('Push notification sent successfully');
+        console.log('Push notification sent ${playerWalletAddress} successfully');
     }
     catch (error) {
         logger_1.default.error('Error sending push notification:', error);

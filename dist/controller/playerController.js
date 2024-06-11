@@ -211,7 +211,9 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
         if (players.length === 0) {
             return res.status(404).send('No players found');
         }
-        res.json(players);
+        // Extracting just the walletAddress values
+        const playerWalletAddresses = players.map(player => player.walletAddress);
+        res.json(playerWalletAddresses);
     }
     catch (error) {
         logger_1.default.error('Error searching for players:', error);
@@ -507,8 +509,8 @@ const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, functi
         if (!player) {
             return res.status(404).json({ error: 'Player not found' });
         }
-        const friendRequest = player.friendRequests;
-        res.json({ friendRequest });
+        const friendRequests = player.friendRequests;
+        res.json({ friendRequests });
     }
     catch (error) {
         console.error('Error fetching friend requests list:', error);

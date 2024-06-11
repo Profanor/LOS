@@ -4,10 +4,10 @@ import { sendFriendRequest, acceptFriendRequest, getSentFriendRequests, declineF
 
 const router = express.Router();
 
+router.get('/', authenticateToken, getFriendRequests);
 router.post('/send', authenticateToken, sendFriendRequest);
 router.post('/accept', authenticateToken, acceptFriendRequest);
 router.get('/status', authenticateToken, getSentFriendRequests);
-router.get('/', authenticateToken, getFriendRequests);
 router.post('/decline', authenticateToken, declineFriendRequest);
 router.post('/unfriend', authenticateToken, unfriend);
 

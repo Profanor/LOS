@@ -11,6 +11,7 @@ router.post('/api/notifications', authenticateToken, handleNotifications);
 router.post('/api/notifications/push', async (req, res) => {
     try {
       const { walletAddress, message } = req.body;
+      
       // Send push notification to the player using FCM
       await sendPushNotification(walletAddress, message);
       res.json({ message: 'Push notification sent successfully' });

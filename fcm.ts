@@ -42,7 +42,7 @@ export const sendPushNotification = async (playerWalletAddress: string, message:
     // Send the push notification using Firebase Admin SDK
     await admin.messaging().send(fcmMessage);
 
-    console.log('Push notification sent successfully');
+    console.log('Push notification sent ${playerWalletAddress} successfully');
   } catch (error) {
     logger.error('Error sending push notification:', error);
   }
