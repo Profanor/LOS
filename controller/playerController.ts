@@ -227,7 +227,7 @@ export const searchForPlayer = async (req: Request, res: Response) => {
     }
 
     // Find players matching the query
-    const player = await Player.findOne(query).select('walletAddress');
+    const player = await Player.findOne(query).select('walletAddress').select('nickname');
 
     // Check if player is found
     if (!player) {
