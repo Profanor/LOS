@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import logger from "../logger";
 import { wss } from './webSocketController'; 
 import { WebSocketWithNickname } from './webSocketController';
-
+import { v4 as uuidv4 } from 'uuid';
 
 // Function to generate a random secret key
 const generateSecretKey = (): string => {
@@ -298,7 +298,9 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
 
     // Add the friend request to the receiver's friendRequests array
       friend.friendRequests.push({
+      senderWallet: player.walletAddress,
       senderNickname: player.nickname,
+      requestId: friendRequest._id,
       timestamp: new Date(),
       status: 'Pending'
     });
@@ -593,8 +595,13 @@ export const getFriendRequests = async (req: AuthenticatedRequest, res: Response
       return res.status(404).json({ error: 'Player not found' });
     }
 
-    const friendRequests = player.friendRequests;
-    res.json({friendRequests});
+    // Map over friendRequests and exclude the _id field
+    const friendRequestsWithoutId = player.friendRequests.map(request => ({
+     ...request.toObject(), // Convert Mongoose document to plain object
+      _id: undefined // Explicitly exclude _id
+    }));
+
+    res.json({ friendRequests: friendRequestsWithoutId });
 
   } catch (error) {
     console.error('Error fetching friend requests list:', error);
