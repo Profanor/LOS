@@ -227,7 +227,7 @@ export const searchForPlayer = async (req: Request, res: Response) => {
     }
 
     // Find players matching the query
-    const player = await Player.findOne(query).select('walletAddress').select('nickname');
+    const player = await Player.findOne(query).select('walletAddress').select(walletAddress);
 
     // Check if player is found
     if (!player) {
@@ -552,9 +552,20 @@ export const getSentFriendRequests = async (req: AuthenticatedRequest, res: Resp
     // Fetch sent friend requests with their statuses
     const sentRequests = await FriendList.find({ playerWallet: walletAddress });
 
+    // Fetch nicknames for each friendWallet
+    const friendWallets = sentRequests.map(request => request.friendWallet).filter((wallet): wallet is string => !!wallet);
+    const friends = await Player.find({ walletAddress: { $in: friendWallets } });
+
+    // Create a map of walletAddress to nickname
+    const nicknameMap: { [key: string]: string } = friends.reduce((map, friend) => {
+      map[friend.walletAddress] = friend.nickname;
+      return map;
+    }, {} as { [key: string]: string });
+
     // Extract relevant information
     const sentRequestsInfo = sentRequests.map(request => ({
-      friendWallet: request.friendWallet,
+      friendWallet: request.friendWallet ?? 'Unknown',
+      nickname: request.friendWallet ? nicknameMap[request.friendWallet] || 'Unknown' : 'Unknown',
       status: request.status,
       timestamp: request.timestamp
     }));

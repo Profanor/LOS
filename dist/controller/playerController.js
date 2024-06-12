@@ -206,14 +206,12 @@ const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function
             query.walletAddress = { $ne: currentUserWalletAddress };
         }
         // Find players matching the query
-        const players = yield player_1.default.find(query).select('walletAddress');
-        // Check if players array is empty
-        if (players.length === 0) {
-            return res.status(404).send('No players found');
+        const player = yield player_1.default.findOne(query).select('walletAddress').select(walletAddress);
+        // Check if player is found
+        if (!player) {
+            return res.status(404).send('No player found');
         }
-        // Extracting just the walletAddress values
-        const playerWalletAddresses = players.map(player => player.walletAddress);
-        res.json(playerWalletAddresses);
+        res.json(player);
     }
     catch (error) {
         logger_1.default.error('Error searching for players:', error);
