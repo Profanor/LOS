@@ -407,6 +407,8 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
             session.endSession();
             return res.status(404).json({ error: 'Player not found' });
         }
+        // Remove the friend request from the receiver's friendRequests array
+        yield player_1.default.findOneAndUpdate({ walletAddress: receiverWallet }, { $pull: { friendRequests: { requestId: friendRequest._id } } }, { session });
         // Notify sender via websocket and save notification in sender's player document
         const notification = {
             type: 'friend_request_declined',

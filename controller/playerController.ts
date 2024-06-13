@@ -284,27 +284,46 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
       return res.status(404).json({ error: 'Player or friend not found' });
     }
 
-    // Check if friend request already exists
-    const existingRequest = await FriendList.findOne({ playerWallet: playersWallet, friendWallet: friend.walletAddress }).session(session);
-    if (existingRequest) {
+    // Check if there is a pending friend request
+    const pendingRequest = await FriendList.findOne({
+      playerWallet: playersWallet,
+      friendWallet: friend.walletAddress,
+      status: 'Pending'
+    }).session(session);
+
+    if (pendingRequest) {
       await session.abortTransaction();
       session.endSession();
-      return res.status(400).json({ error: 'Friend request already sent' });
+      return res.status(400).json({ error: 'Friend request already pending' });
+    }
+
+    // Check if they are already friends
+    const existingFriendship = await FriendList.findOne({
+      $or: [
+        { playerWallet: playersWallet, friendWallet: friend.walletAddress, status: 'Accepted' },
+        { playerWallet: friend.walletAddress, friendWallet: playersWallet, status: 'Accepted' }
+      ]
+    }).session(session);
+
+    if (existingFriendship) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ error: 'You are already friends' });
     }
 
     // Create friend request
-    const friendRequest = new FriendList({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
+    const friendRequest = new FriendList({ playerWallet: playersWallet, friendWallet: friend.walletAddress, status: 'Pending' });
     await friendRequest.save({ session });
 
     // Add the friend request to the receiver's friendRequests array
-      friend.friendRequests.push({
+    friend.friendRequests.push({
       senderWallet: player.walletAddress,
       senderNickname: player.nickname,
       requestId: friendRequest._id,
       timestamp: new Date(),
       status: 'Pending'
     });
-      await friend.save({ session });
+    await friend.save({ session });
 
     // Notify receiver via websocket
     const notification = {
