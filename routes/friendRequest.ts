@@ -1,6 +1,6 @@
 import express from 'express';
 import authenticateToken from '../middleware/auth';
-import { sendFriendRequest, acceptFriendRequest, getSentFriendRequests, declineFriendRequest, unfriend, getFriendRequests, getFriendsList } from '../controller/playerController';
+import { sendFriendRequest, acceptFriendRequest, getSentFriendRequests, declineFriendRequest, unfriend, getFriendRequests, getFriendsList } from '../controller/friendRequestController';
 
 const router = express.Router();
 
