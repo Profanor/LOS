@@ -267,7 +267,9 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield friendRequest.save({ session });
         // Add the friend request to the receiver's friendRequests array
         friend.friendRequests.push({
+            senderWallet: player.walletAddress,
             senderNickname: player.nickname,
+            requestId: friendRequest._id,
             timestamp: new Date(),
             status: 'Pending'
         });
@@ -481,12 +483,24 @@ const getSentFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, fu
         }
         // Fetch sent friend requests with their statuses
         const sentRequests = yield friendList_1.default.find({ playerWallet: walletAddress });
+        // Fetch nicknames for each friendWallet
+        const friendWallets = sentRequests.map(request => request.friendWallet).filter((wallet) => !!wallet);
+        const friends = yield player_1.default.find({ walletAddress: { $in: friendWallets } });
+        // Create a map of walletAddress to nickname
+        const nicknameMap = friends.reduce((map, friend) => {
+            map[friend.walletAddress] = friend.nickname;
+            return map;
+        }, {});
         // Extract relevant information
-        const sentRequestsInfo = sentRequests.map(request => ({
-            friendWallet: request.friendWallet,
-            status: request.status,
-            timestamp: request.timestamp
-        }));
+        const sentRequestsInfo = sentRequests.map(request => {
+            var _a;
+            return ({
+                friendWallet: (_a = request.friendWallet) !== null && _a !== void 0 ? _a : 'Unknown',
+                nickname: request.friendWallet ? nicknameMap[request.friendWallet] || 'Unknown' : 'Unknown',
+                status: request.status,
+                timestamp: request.timestamp
+            });
+        });
         res.json({ sentRequests: sentRequestsInfo });
     }
     catch (error) {
@@ -507,8 +521,10 @@ const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, functi
         if (!player) {
             return res.status(404).json({ error: 'Player not found' });
         }
-        const friendRequests = player.friendRequests;
-        res.json({ friendRequests });
+        // Map over friendRequests and exclude the _id field
+        const friendRequestsWithoutId = player.friendRequests.map(request => (Object.assign(Object.assign({}, request.toObject()), { _id: undefined // Explicitly exclude _id
+         })));
+        res.json({ friendRequests: friendRequestsWithoutId });
     }
     catch (error) {
         console.error('Error fetching friend requests list:', error);

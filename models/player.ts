@@ -50,7 +50,7 @@ const playerSchema = new mongoose.Schema({
   friendRequests: [{
     senderWallet: String,
     senderNickname: String,
-    requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'FriendList' },
+    requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'FriendList' }, //added requestId for operations
     timestamp: Date,
     status: { type: String, enum: ['Pending', 'Accepted', 'Declined'], default: 'Pending' }
   }],

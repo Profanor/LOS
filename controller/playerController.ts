@@ -464,6 +464,13 @@ export const declineFriendRequest = async (req: AuthenticatedRequest, res: Respo
       return res.status(404).json({ error: 'Player not found' });
     }
 
+    // Remove the friend request from the receiver's friendRequests array
+    await Player.findOneAndUpdate(
+      { walletAddress: receiverWallet },
+      { $pull: { friendRequests: { requestId: friendRequest._id } } },
+      { session }
+    );
+
     // Notify sender via websocket and save notification in sender's player document
     const notification = {
       type: 'friend_request_declined',
