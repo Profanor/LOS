@@ -13,4 +13,5 @@ router.post('/accept', auth_1.default, playerController_1.acceptFriendRequest);
 router.get('/status', auth_1.default, playerController_1.getSentFriendRequests);
 router.post('/decline', auth_1.default, playerController_1.declineFriendRequest);
 router.post('/unfriend', auth_1.default, playerController_1.unfriend);
+router.post('/friends', auth_1.default, playerController_1.getFriendsList);
 exports.default = router;

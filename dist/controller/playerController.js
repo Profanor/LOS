@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getFriendRequests = exports.getSentFriendRequests = exports.unfriend = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.getFriendsList = exports.getFriendRequests = exports.getSentFriendRequests = exports.unfriend = exports.declineFriendRequest = exports.acceptFriendRequest = exports.sendFriendRequest = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const friendList_1 = __importDefault(require("../models/friendList"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -255,15 +255,31 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
             session.endSession();
             return res.status(404).json({ error: 'Player or friend not found' });
         }
-        // Check if friend request already exists
-        const existingRequest = yield friendList_1.default.findOne({ playerWallet: playersWallet, friendWallet: friend.walletAddress }).session(session);
-        if (existingRequest) {
+        // Check if there is a pending friend request
+        const pendingRequest = yield friendList_1.default.findOne({
+            playerWallet: playersWallet,
+            friendWallet: friend.walletAddress,
+            status: 'Pending'
+        }).session(session);
+        if (pendingRequest) {
             yield session.abortTransaction();
             session.endSession();
-            return res.status(400).json({ error: 'Friend request already sent' });
+            return res.status(400).json({ error: 'Friend request already pending' });
+        }
+        // Check if they are already friends
+        const existingFriendship = yield friendList_1.default.findOne({
+            $or: [
+                { playerWallet: playersWallet, friendWallet: friend.walletAddress, status: 'Accepted' },
+                { playerWallet: friend.walletAddress, friendWallet: playersWallet, status: 'Accepted' }
+            ]
+        }).session(session);
+        if (existingFriendship) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ error: 'You are already friends' });
         }
         // Create friend request
-        const friendRequest = new friendList_1.default({ playerWallet: playersWallet, friendWallet: friend.walletAddress });
+        const friendRequest = new friendList_1.default({ playerWallet: playersWallet, friendWallet: friend.walletAddress, status: 'Pending' });
         yield friendRequest.save({ session });
         // Add the friend request to the receiver's friendRequests array
         friend.friendRequests.push({
@@ -534,6 +550,42 @@ const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.getFriendRequests = getFriendRequests;
+const getFriendsList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _h;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
+    try {
+        const walletAddress = (_h = req.user) === null || _h === void 0 ? void 0 : _h.walletAddress;
+        // Check if player exists
+        const player = yield player_1.default.findOne({ walletAddress }).session(session);
+        if (!player) {
+            yield session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        // Fetch the friends list where the player is either the sender or receiver of an accepted friend request
+        const friends = yield friendList_1.default.find({
+            $or: [
+                { playerWallet: walletAddress, status: 'Accepted' },
+                { friendWallet: walletAddress, status: 'Accepted' }
+            ]
+        }).session(session);
+        // Extract wallet addresses of friends
+        const friendWallets = friends.map(friend => friend.playerWallet === walletAddress ? friend.friendWallet : friend.playerWallet);
+        // Fetch player details for each friend
+        const friendDetails = yield player_1.default.find({ walletAddress: { $in: friendWallets } }).session(session);
+        yield session.commitTransaction();
+        session.endSession();
+        res.json(friendDetails);
+    }
+    catch (error) {
+        yield session.abortTransaction();
+        session.endSession();
+        console.error('Error fetching friends list:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.getFriendsList = getFriendsList;
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];

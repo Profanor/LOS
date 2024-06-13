@@ -636,6 +636,53 @@ export const getFriendRequests = async (req: AuthenticatedRequest, res: Response
 };
 
 
+export const getFriendsList = async (req: AuthenticatedRequest, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const walletAddress = req.user?.walletAddress;
+
+    // Check if player exists
+    const player = await Player.findOne({ walletAddress }).session(session);
+    if (!player) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    // Fetch the friends list where the player is either the sender or receiver of an accepted friend request
+    const friends = await FriendList.find({
+      $or: [
+        { playerWallet: walletAddress, status: 'Accepted' },
+        { friendWallet: walletAddress, status: 'Accepted' }
+      ]
+    }).session(session);
+
+    // Extract wallet addresses of friends
+    const friendWallets = friends.map(friend =>
+      friend.playerWallet === walletAddress ? friend.friendWallet : friend.playerWallet
+    );
+
+    // Fetch only necessary fields for each friend
+    const friendDetails = await Player.find({ walletAddress: { $in: friendWallets } })
+      .select('nickname walletAddress')  // Only select necessary fields
+      .session(session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({friendDetails: friendDetails});
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error('Error fetching friends list:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
 export const logout = async (req: Request, res: Response) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
