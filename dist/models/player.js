@@ -46,7 +46,6 @@ const playerSchema = new mongoose_1.default.Schema({
                 value: { type: String }
             }]
     },
-    // Add registrationToken property
     registrationToken: {
         type: String,
         required: false
@@ -54,7 +53,7 @@ const playerSchema = new mongoose_1.default.Schema({
     friendRequests: [{
             senderWallet: String,
             senderNickname: String,
-            requestId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'FriendList' }, //added requestId for operations
+            requestId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Player' },
             timestamp: Date,
             status: { type: String, enum: ['Pending', 'Accepted', 'Declined'], default: 'Pending' }
         }],
@@ -64,7 +63,6 @@ const playerSchema = new mongoose_1.default.Schema({
             status: { type: String, enum: ['Pending', 'Accepted', 'Declined'] },
             timestamp: { type: Date, default: Date.now }
         }],
-    // Add reference to Friend model
     friends: [{ type: String, ref: 'Player' }],
 });
 const Player = mongoose_1.default.model('Player', playerSchema);

@@ -268,45 +268,55 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
   };
   
   
+  //Modified this endpoint to query the Player Schema instead of the friendList schema
   export const unfriend = async (req: AuthenticatedRequest, res: Response) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-      const { friendWallet } = req.body;
-      const walletAddress = req.user?.walletAddress;
-  
-      if (!walletAddress) {
-        return res.status(400).json({ error: 'Wallet address is required' });
-      }
-  
-      // Find the current player
-      const currentPlayer = await Player.findOne({ walletAddress });
-  
-      if (!currentPlayer) {
-        return res.status(404).json({ error: 'Player not found' });
-      }
-  
-      // Find the friend to unfriend
-      const friendPlayer = await Player.findOne({ walletAddress: friendWallet });
-  
-      if (!friendPlayer) {
-        return res.status(404).json({ error: 'Friend not found' });
-      }
-  
-      // Remove friend from each other's friend list
-      currentPlayer.friends = currentPlayer.friends.filter(friend => friend !== friendWallet);
-      friendPlayer.friends = friendPlayer.friends.filter(friend => friend !== walletAddress);
-  
-      // Save changes
-      await currentPlayer.save();
-      await friendPlayer.save();
-  
-      res.json({ message: 'You are no longer friends' });
+        const { friendWallet } = req.body;
+        const walletAddress = req.user?.walletAddress;
+
+        if (!walletAddress) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ error: 'Wallet address is required' });
+        }
+
+        const currentPlayer = await Player.findOne({ walletAddress }).session(session);
+        if (!currentPlayer) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Player not found' });
+        }
+
+        const friendPlayer = await Player.findOne({ walletAddress: friendWallet }).session(session);
+        if (!friendPlayer) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Friend not found' });
+        }
+
+        currentPlayer.friends = currentPlayer.friends.filter(friend => friend !== friendWallet);
+        friendPlayer.friends = friendPlayer.friends.filter(friend => friend !== walletAddress);
+
+        await currentPlayer.save({ session });
+        await friendPlayer.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.json({ message: 'You are no longer friends' });
     } catch (error) {
-      logger.error('Error unfriending:', error);
-      res.status(500).json({ error: 'Internal server error' });
+        await session.abortTransaction();
+        session.endSession();
+        console.error('Error unfriending:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  };
-  
-  
+};
+
+
+
   export const getSentFriendRequests = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const walletAddress = req.user?.walletAddress;
@@ -349,8 +359,9 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+
   
-  
+  //Does not reference the friendList Schema so safe for now
   export const getFriendRequests = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const walletAddress = req.user?.walletAddress;
@@ -379,50 +390,26 @@ export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+
   
-  
+  //Modified this endpoint to query the Player Schema directly instead of friendList schema
   export const getFriendsList = async (req: AuthenticatedRequest, res: Response) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-  
     try {
-      const walletAddress = req.user?.walletAddress;
-  
-      // Check if player exists
-      const player = await Player.findOne({ walletAddress }).session(session);
-      if (!player) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(404).json({ error: 'Player not found' });
-      }
-  
-      // Fetch the friends list where the player is either the sender or receiver of an accepted friend request
-      const friends = await FriendList.find({
-        $or: [
-          { playerWallet: walletAddress, status: 'Accepted' },
-          { friendWallet: walletAddress, status: 'Accepted' }
-        ]
-      }).session(session);
-  
-      // Extract wallet addresses of friends
-      const friendWallets = friends.map(friend =>
-        friend.playerWallet === walletAddress ? friend.friendWallet : friend.playerWallet
-      );
-  
-      // Fetch only necessary fields for each friend
-      const friendDetails = await Player.find({ walletAddress: { $in: friendWallets } })
-        .select('nickname walletAddress')  // Only select necessary fields
-        .session(session);
-  
-      await session.commitTransaction();
-      session.endSession();
-  
-      res.json({friendDetails: friendDetails});
+        const walletAddress = req.user?.walletAddress;
+
+        const player = await Player.findOne({ walletAddress });
+        if (!player) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+
+        const friends = await Player.find({ walletAddress: { $in: player.friends } })
+            .select('nickname walletAddress');
+
+        res.json({ friendDetails: friends });
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      console.error('Error fetching friends list:', error);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching friends list:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  };
+};
+
   

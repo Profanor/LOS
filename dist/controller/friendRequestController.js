@@ -239,32 +239,40 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
 exports.declineFriendRequest = declineFriendRequest;
 const unfriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _d;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
     try {
         const { friendWallet } = req.body;
         const walletAddress = (_d = req.user) === null || _d === void 0 ? void 0 : _d.walletAddress;
         if (!walletAddress) {
+            yield session.abortTransaction();
+            session.endSession();
             return res.status(400).json({ error: 'Wallet address is required' });
         }
-        // Find the current player
-        const currentPlayer = yield player_1.default.findOne({ walletAddress });
+        const currentPlayer = yield player_1.default.findOne({ walletAddress }).session(session);
         if (!currentPlayer) {
+            yield session.abortTransaction();
+            session.endSession();
             return res.status(404).json({ error: 'Player not found' });
         }
-        // Find the friend to unfriend
-        const friendPlayer = yield player_1.default.findOne({ walletAddress: friendWallet });
+        const friendPlayer = yield player_1.default.findOne({ walletAddress: friendWallet }).session(session);
         if (!friendPlayer) {
+            yield session.abortTransaction();
+            session.endSession();
             return res.status(404).json({ error: 'Friend not found' });
         }
-        // Remove friend from each other's friend list
         currentPlayer.friends = currentPlayer.friends.filter(friend => friend !== friendWallet);
         friendPlayer.friends = friendPlayer.friends.filter(friend => friend !== walletAddress);
-        // Save changes
-        yield currentPlayer.save();
-        yield friendPlayer.save();
+        yield currentPlayer.save({ session });
+        yield friendPlayer.save({ session });
+        yield session.commitTransaction();
+        session.endSession();
         res.json({ message: 'You are no longer friends' });
     }
     catch (error) {
-        logger_1.default.error('Error unfriending:', error);
+        yield session.abortTransaction();
+        session.endSession();
+        console.error('Error unfriending:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -334,37 +342,17 @@ const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, functi
 exports.getFriendRequests = getFriendRequests;
 const getFriendsList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _g;
-    const session = yield mongoose_1.default.startSession();
-    session.startTransaction();
     try {
         const walletAddress = (_g = req.user) === null || _g === void 0 ? void 0 : _g.walletAddress;
-        // Check if player exists
-        const player = yield player_1.default.findOne({ walletAddress }).session(session);
+        const player = yield player_1.default.findOne({ walletAddress });
         if (!player) {
-            yield session.abortTransaction();
-            session.endSession();
             return res.status(404).json({ error: 'Player not found' });
         }
-        // Fetch the friends list where the player is either the sender or receiver of an accepted friend request
-        const friends = yield friendList_1.default.find({
-            $or: [
-                { playerWallet: walletAddress, status: 'Accepted' },
-                { friendWallet: walletAddress, status: 'Accepted' }
-            ]
-        }).session(session);
-        // Extract wallet addresses of friends
-        const friendWallets = friends.map(friend => friend.playerWallet === walletAddress ? friend.friendWallet : friend.playerWallet);
-        // Fetch only necessary fields for each friend
-        const friendDetails = yield player_1.default.find({ walletAddress: { $in: friendWallets } })
-            .select('nickname walletAddress') // Only select necessary fields
-            .session(session);
-        yield session.commitTransaction();
-        session.endSession();
-        res.json({ friendDetails: friendDetails });
+        const friends = yield player_1.default.find({ walletAddress: { $in: player.friends } })
+            .select('nickname walletAddress');
+        res.json({ friendDetails: friends });
     }
     catch (error) {
-        yield session.abortTransaction();
-        session.endSession();
         console.error('Error fetching friends list:', error);
         res.status(500).json({ error: 'Internal server error' });
     }

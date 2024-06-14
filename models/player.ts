@@ -42,7 +42,6 @@ const playerSchema = new mongoose.Schema({
       value: { type: String }
     }]
   },
-  // Add registrationToken property
   registrationToken: {
     type: String,
     required: false
@@ -50,7 +49,7 @@ const playerSchema = new mongoose.Schema({
   friendRequests: [{
     senderWallet: String,
     senderNickname: String,
-    requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'FriendList' }, //added requestId for operations
+    requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
     timestamp: Date,
     status: { type: String, enum: ['Pending', 'Accepted', 'Declined'], default: 'Pending' }
   }],
@@ -60,7 +59,6 @@ const playerSchema = new mongoose.Schema({
     status: { type: String, enum: ['Pending', 'Accepted', 'Declined'] },
     timestamp: { type: Date, default: Date.now }
   }],
-  // Add reference to Friend model
   friends: [{ type: String, ref: 'Player' }],
 });
 
