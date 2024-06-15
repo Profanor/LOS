@@ -98,14 +98,14 @@ const handlePvpAction = (req, res) => __awaiter(void 0, void 0, void 0, function
                 // Check if the opponent's data needs to be updated in the sender's acceptedChallengers array
                 if (player.notification_BattleRequest.challengers && index < player.notification_BattleRequest.challengers.length) {
                     const opponent = player.notification_BattleRequest.challengers[index];
-                    const oneMinuteInSeconds = 60; // 1 minute in seconds
-                    // Check if the request has expired (1 minute timeout)
+                    const threeMinutesInSeconds = 180; // 3 minutes in seconds
+                    // Check if the request has expired (3 minutes timeout)
                     const requestTimestamp = opponent.timestamp;
                     if (requestTimestamp) {
                         const currentTimeInSeconds = Math.floor(Date.now() / 1000); // Current time in seconds
                         const requestTimeInSeconds = Math.floor(requestTimestamp.getTime() / 1000); // Request time in seconds
                         const elapsedTimeInSeconds = currentTimeInSeconds - requestTimeInSeconds;
-                        if (elapsedTimeInSeconds > oneMinuteInSeconds) {
+                        if (elapsedTimeInSeconds > threeMinutesInSeconds) {
                             console.log(`PvP battle request from ${opponent.walletAddress} has expired (${elapsedTimeInSeconds} seconds elapsed).`);
                             // Remove the expired request from the challenger's array
                             player.notification_BattleRequest.challengers.splice(index, 1);

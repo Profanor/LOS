@@ -9,9 +9,9 @@ const friendRequestController_1 = require("../controller/friendRequestController
 const router = express_1.default.Router();
 router.get('/', auth_1.default, friendRequestController_1.getFriendRequests);
 router.post('/send', auth_1.default, friendRequestController_1.sendFriendRequest);
-// router.post('/accept', authenticateToken, acceptFriendRequest);
-// router.get('/status', authenticateToken, getSentFriendRequests);
-// router.post('/decline', authenticateToken, declineFriendRequest);
+router.post('/accept', auth_1.default, friendRequestController_1.acceptFriendRequest);
+router.get('/status', auth_1.default, friendRequestController_1.getFriendRequestStatus);
+router.post('/decline', auth_1.default, friendRequestController_1.declineFriendRequest);
 router.post('/unfriend', auth_1.default, friendRequestController_1.unfriend);
 router.get('/friends', auth_1.default, friendRequestController_1.getFriendsList);
 exports.default = router;
