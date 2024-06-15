@@ -17,6 +17,7 @@ const webSocketController_1 = require("./webSocketController");
 const logger_1 = __importDefault(require("../logger"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const player_1 = __importDefault(require("../models/player"));
+// Creates and sends a friend request to a player
 const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const session = yield mongoose_1.default.startSession();
@@ -101,6 +102,7 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.sendFriendRequest = sendFriendRequest;
+// Accepts the friend request
 const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _c;
     const session = yield mongoose_1.default.startSession();
@@ -185,6 +187,7 @@ const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.acceptFriendRequest = acceptFriendRequest;
+// Declines the Friend request
 const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _d;
     const session = yield mongoose_1.default.startSession();
@@ -260,7 +263,7 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.declineFriendRequest = declineFriendRequest;
-//Modified this endpoint to query the Player Schema instead of the friendList schema
+// Unfriends the Players
 const unfriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _e;
     const session = yield mongoose_1.default.startSession();
@@ -301,6 +304,7 @@ const unfriend = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.unfriend = unfriend;
+// Gets the Status of each friend request the player sent out. i.e Pending,Accepted or Declined.
 const getFriendRequestStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _f;
     try {
@@ -329,7 +333,8 @@ const getFriendRequestStatus = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.getFriendRequestStatus = getFriendRequestStatus;
-//Does not reference the friendList Schema so safe for now
+// Does not reference the friendList Schema so safe for now
+// Gets the friend requests for the player
 const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _g;
     try {
@@ -353,6 +358,7 @@ const getFriendRequests = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.getFriendRequests = getFriendRequests;
+// Gets the list of friends for the player
 const getFriendsList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _h;
     try {
