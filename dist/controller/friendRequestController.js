@@ -70,6 +70,13 @@ const sendFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
         // Add the friend request to the receiver's friendRequests array
         friend.friendRequests.push(friendRequest);
         yield friend.save({ session });
+        // Add the friend request status to the friendNotifications array of the sender
+        player.friendRequestNotifications.push({
+            friendsNickname: friend.nickname,
+            status: 'Pending',
+            timestamp: new Date()
+        });
+        yield player.save({ session });
         // Notify receiver via websocket
         const notification = {
             type: 'friend_request',
@@ -146,12 +153,12 @@ const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, func
         // Save the updated receiver after removal
         yield receiver.save({ session });
         yield sender.save({ session });
-        // Add a friend request notification to the sender
-        sender.friendRequestNotifications.push({
-            receiverNickname: receiver.nickname,
-            status: 'Accepted',
-            timestamp: new Date()
-        });
+        // Update the existing notification in the sender's friendRequestNotifications array
+        const notificationIndex = sender.friendRequestNotifications.findIndex(notification => notification.friendsNickname === receiver.nickname && notification.status === 'Pending');
+        if (notificationIndex !== -1) {
+            sender.friendRequestNotifications[notificationIndex].status = 'Accepted';
+            sender.friendRequestNotifications[notificationIndex].timestamp = new Date();
+        }
         yield receiver.save({ session });
         yield sender.save({ session });
         // Notify sender via websocket
@@ -215,16 +222,20 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const [friendRequest] = receiver.friendRequests.splice(friendRequestIndex, 1);
         // Update the receiver's document
         yield receiver.save({ session });
-        // Update the senders friend request status to 'Declined'
-        friendRequest.status = 'Declined';
-        yield friendRequest.save({ session });
-        // find sender and receiver
+        // Find the sender
         const sender = yield player_1.default.findOne({ walletAddress: friendRequest.senderWallet }).session(session);
         if (!sender) {
             yield session.abortTransaction();
             session.endSession();
             return res.status(404).json({ error: 'Sender not found' });
         }
+        // Update the existing notification in the sender's friendRequestNotifications array to Declined
+        const notificationIndex = sender.friendRequestNotifications.findIndex(notification => notification.friendsNickname === receiver.nickname && notification.status === 'Pending');
+        if (notificationIndex !== -1) {
+            sender.friendRequestNotifications[notificationIndex].status = 'Declined';
+            sender.friendRequestNotifications[notificationIndex].timestamp = new Date();
+        }
+        yield sender.save({ session });
         // Notify sender via websocket and save notification in sender's player document
         const notification = {
             type: 'friend_request_declined',
@@ -232,12 +243,6 @@ const declineFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, fun
             message: `${receiver.nickname} has declined your friend request.`,
             timestamp: Date.now()
         };
-        sender.friendRequestNotifications.push({
-            receiverNickname: receiver.nickname,
-            status: 'Declined',
-            timestamp: new Date()
-        });
-        yield sender.save({ session });
         webSocketController_1.wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN && client.nickname === sender.nickname) {
                 client.send(JSON.stringify(notification));
@@ -312,7 +317,9 @@ const getFriendRequestStatus = (req, res) => __awaiter(void 0, void 0, void 0, f
         const friendRequestStatuses = player.friendRequestNotifications.map(notification => ({
             status: notification.status,
             timestamp: notification.timestamp,
-            requestId: notification._id,
+            statusId: notification._id,
+            receiverNickname: notification.friendsNickname,
+            receiverWallet: notification.receiverWallet,
         }));
         res.json({ Status: friendRequestStatuses });
     }

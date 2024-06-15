@@ -6,7 +6,8 @@ import logger from "../logger";
 import mongoose from "mongoose";
 import Player from '../models/player';
 
-  
+
+  // Creates and sends a friend request to a player
   export const sendFriendRequest = async (req: AuthenticatedRequest, res: Response) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -102,7 +103,7 @@ import Player from '../models/player';
   };
   
   
-  
+  // Accepts the friend request
   export const acceptFriendRequest = async (req: AuthenticatedRequest, res: Response) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -203,7 +204,7 @@ import Player from '../models/player';
     }
   };
   
-  
+  // Declines the Friend request
   export const declineFriendRequest = async (req: AuthenticatedRequest, res: Response) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -248,7 +249,7 @@ import Player from '../models/player';
       // Update the receiver's document
       await receiver.save({ session });
   
-      // Update the senders friend request status to 'Declined'
+      // Find the sender
       const sender = await Player.findOne({ walletAddress: friendRequest.senderWallet }).session(session);
         if (!sender) {
             await session.abortTransaction();
@@ -256,7 +257,7 @@ import Player from '../models/player';
             return res.status(404).json({ error: 'Sender not found' });
         }
 
-        // Update the existing notification in the sender's friendRequestNotifications array
+        // Update the existing notification in the sender's friendRequestNotifications array to Declined
         const notificationIndex = sender.friendRequestNotifications.findIndex(notification => notification.friendsNickname === receiver.nickname && notification.status === 'Pending');
         if (notificationIndex !== -1) {
             sender.friendRequestNotifications[notificationIndex].status = 'Declined';
@@ -292,7 +293,7 @@ import Player from '../models/player';
 
 
   
-  //Modified this endpoint to query the Player Schema instead of the friendList schema
+  // Unfriends the Players
   export const unfriend = async (req: AuthenticatedRequest, res: Response) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -340,6 +341,7 @@ import Player from '../models/player';
 };
 
 
+// Gets the Status of each friend request the player sent out. i.e Pending,Accepted or Declined.
 export const getFriendRequestStatus = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const walletAddress = req.user?.walletAddress;
@@ -372,7 +374,8 @@ export const getFriendRequestStatus = async (req: AuthenticatedRequest, res: Res
 
 
   
-  //Does not reference the friendList Schema so safe for now
+  // Does not reference the friendList Schema so safe for now
+  // Gets the friend requests for the player
   export const getFriendRequests = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const walletAddress = req.user?.walletAddress;
@@ -402,7 +405,7 @@ export const getFriendRequestStatus = async (req: AuthenticatedRequest, res: Res
     }
   };
 
-
+  // Gets the list of friends for the player
   export const getFriendsList = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const walletAddress = req.user?.walletAddress;
