@@ -54,8 +54,8 @@ const playerSchema = new mongoose.Schema({
     status: { type: String, enum: ['Pending', 'Accepted', 'Declined'], default: 'Pending' }
   }],
   friendRequestNotifications: [{
-    senderWallet: String,
     receiverWallet: String,
+    friendsNickname: String,
     status: { type: String, enum: ['Pending', 'Accepted', 'Declined'] },
     timestamp: { type: Date, default: Date.now }
   }],

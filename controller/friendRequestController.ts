@@ -67,6 +67,14 @@ import Player from '../models/player';
       // Add the friend request to the receiver's friendRequests array
       friend.friendRequests.push(friendRequest);
       await friend.save({ session });
+
+      // Add the friend request status to the friendNotifications array of the sender
+      player.friendRequestNotifications.push({
+        friendsNickname: friend.nickname,
+        status: 'Pending',
+        timestamp: new Date()
+      });
+      await player.save({ session });
   
       // Notify receiver via websocket
       const notification = {
@@ -160,12 +168,12 @@ import Player from '../models/player';
       await receiver.save({ session });
       await sender.save({ session });
   
-      // Add a friend request notification to the sender
-      sender.friendRequestNotifications.push({
-        receiverNickname: receiver.nickname,
-        status: 'Accepted',
-        timestamp: new Date()
-      });
+      // Update the existing notification in the sender's friendRequestNotifications array
+      const notificationIndex = sender.friendRequestNotifications.findIndex(notification => notification.friendsNickname === receiver.nickname && notification.status === 'Pending');
+      if (notificationIndex !== -1) {
+          sender.friendRequestNotifications[notificationIndex].status = 'Accepted';
+          sender.friendRequestNotifications[notificationIndex].timestamp = new Date();
+      }
   
       await receiver.save({ session });
       await sender.save({ session });
@@ -241,18 +249,21 @@ import Player from '../models/player';
       await receiver.save({ session });
   
       // Update the senders friend request status to 'Declined'
-      friendRequest.status = 'Declined';
-      await friendRequest.save({ session });
-
-  
-      // find sender and receiver
       const sender = await Player.findOne({ walletAddress: friendRequest.senderWallet }).session(session);
-      if (!sender) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(404).json({ error: 'Sender not found' });
-      }
-  
+        if (!sender) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Sender not found' });
+        }
+
+        // Update the existing notification in the sender's friendRequestNotifications array
+        const notificationIndex = sender.friendRequestNotifications.findIndex(notification => notification.friendsNickname === receiver.nickname && notification.status === 'Pending');
+        if (notificationIndex !== -1) {
+            sender.friendRequestNotifications[notificationIndex].status = 'Declined';
+            sender.friendRequestNotifications[notificationIndex].timestamp = new Date();
+        }
+
+        await sender.save({ session });
   
       // Notify sender via websocket and save notification in sender's player document
       const notification = {
@@ -261,13 +272,6 @@ import Player from '../models/player';
         message: `${receiver.nickname} has declined your friend request.`,
         timestamp: Date.now()
       };
-      sender.friendRequestNotifications.push({
-        receiverNickname: receiver.nickname,
-        status: 'Declined',
-        timestamp: new Date()
-      });
-      await sender.save({ session });
-  
       wss.clients.forEach((client: WebSocketWithNickname) => {
         if (client.readyState === WebSocket.OPEN && client.nickname === sender.nickname) {
           client.send(JSON.stringify(notification));
@@ -354,7 +358,9 @@ export const getFriendRequestStatus = async (req: AuthenticatedRequest, res: Res
         const friendRequestStatuses = player.friendRequestNotifications.map(notification => ({
             status: notification.status,
             timestamp: notification.timestamp,
-            requestId: notification._id,
+            statusId: notification._id,
+            receiverNickname: notification.friendsNickname,
+            receiverWallet: notification.receiverWallet,
         }));
 
         res.json({ Status: friendRequestStatuses });
