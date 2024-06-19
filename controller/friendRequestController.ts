@@ -136,7 +136,7 @@ import Player from '../models/player';
       }
 
       
-      // Find the friend request by ID
+      // Find the friend request by requestId
       const friendRequest = receiver.friendRequests.find(req => req.requestId?.toString() === requestId);
       if (!friendRequest || friendRequest.status !== 'Pending') {
           await session.abortTransaction();
@@ -203,6 +203,7 @@ import Player from '../models/player';
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+  
   
   // Declines the Friend request
   export const declineFriendRequest = async (req: AuthenticatedRequest, res: Response) => {

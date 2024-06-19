@@ -129,7 +129,7 @@ const acceptFriendRequest = (req, res) => __awaiter(void 0, void 0, void 0, func
             session.endSession();
             return res.status(404).json({ error: 'Receiver not found' });
         }
-        // Find the friend request by ID
+        // Find the friend request by requestId
         const friendRequest = receiver.friendRequests.find(req => { var _a; return ((_a = req.requestId) === null || _a === void 0 ? void 0 : _a.toString()) === requestId; });
         if (!friendRequest || friendRequest.status !== 'Pending') {
             yield session.abortTransaction();
