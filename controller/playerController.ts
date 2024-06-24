@@ -175,6 +175,40 @@ export const getBattleMeta = async (req: Request, res: Response) => {
 };
 
 
+export const getBattleLog = async (req: Request, res: Response) => {
+  try {
+    const { nickname, walletAddress } = req.body;
+
+  if (!nickname && !walletAddress) {
+    return res.status(400).send('Nickname or walletAddress is required');
+  }
+
+  // Prepare the search query
+  const query: any = {};
+  if (nickname) {
+    query.nickname = nickname;
+  }
+  if (walletAddress) {
+    query.walletAddress = walletAddress;
+  }
+
+  // Fetch the player based on the query
+  const player = await Player.findOne(query);
+
+  // If player is found, return the battle log
+  if (player) {
+    return res.status(200).json({ battleLog: player.battleLog });
+  } else {
+    // If no player is found, return an error message
+    return res.status(404).send('Player not found');
+  }
+
+  } catch (error) {
+    logger.error('Error fetching battle log:', error);
+    res.status(500).json({ error: 'Internal server error' });
+ }
+};
+
 export const searchForPlayer = async (req: Request, res: Response) => {
   try {
     const { nickname, walletAddress } = req.body;

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
+exports.logout = exports.getPlayerOnlineStatus = exports.searchForPlayer = exports.getBattleLog = exports.getBattleMeta = exports.switchCharacter = exports.signup = void 0;
 const player_1 = __importDefault(require("../models/player"));
 const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -163,6 +163,37 @@ const getBattleMeta = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getBattleMeta = getBattleMeta;
+const getBattleLog = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nickname, walletAddress } = req.body;
+        if (!nickname && !walletAddress) {
+            return res.status(400).send('Nickname or walletAddress is required');
+        }
+        // Prepare the search query
+        const query = {};
+        if (nickname) {
+            query.nickname = nickname;
+        }
+        if (walletAddress) {
+            query.walletAddress = walletAddress;
+        }
+        // Fetch the player based on the query
+        const player = yield player_1.default.findOne(query);
+        // If player is found, return the battle log
+        if (player) {
+            return res.status(200).json({ battleLog: player.battleLog });
+        }
+        else {
+            // If no player is found, return an error message
+            return res.status(404).send('Player not found');
+        }
+    }
+    catch (error) {
+        logger_1.default.error('Error fetching battle log:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.getBattleLog = getBattleLog;
 const searchForPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
