@@ -64,12 +64,12 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             const userId = existingPlayer._id.toString();
             const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
             const { token, refreshToken } = generateTokens(tokenPayload);
-            // Log the token payload before sending it back
-            logger_1.default.info('Token payload:', tokenPayload);
+            // Log the user ID before sending it back
+            logger_1.default.info(`User logged in: ${userId}`);
             return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
         }
         ;
-        // Check if nickname is already taken by another player
+        // If nickname is already taken, generate alternatives
         const playerWithSameNickname = yield player_1.default.findOne({ nickname });
         if (playerWithSameNickname) {
             const alternativeNicknames = generateAlternativeNicknames(nickname);
@@ -110,8 +110,8 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const userId = newPlayer._id.toString();
         const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
         const { token, refreshToken } = generateTokens(tokenPayload);
-        // Log the token payload before sending it back
-        logger_1.default.info('Token payload:', tokenPayload);
+        // Log the user ID before sending it back
+        logger_1.default.info(`Player created: ${userId}`);
         return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
     }
     catch (error) {

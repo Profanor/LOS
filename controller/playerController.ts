@@ -21,6 +21,7 @@ const generateTokens = (tokenPayload: { userId: string; walletAddress: string; n
   return { token, refreshToken };
 };
 
+
 // Function to generate alternative nicknames
 const generateAlternativeNicknames = (nickname: string) => {
   const alternatives = [];
@@ -63,13 +64,13 @@ export const signup = async (req: Request, res: Response) => {
         const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
         const { token, refreshToken } = generateTokens(tokenPayload);
 
-        // Log the token payload before sending it back
-        logger.info('Token payload:', tokenPayload);
+        // Log the user ID before sending it back
+        logger.info(`User logged in: ${userId}`);
 
         return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
       };
 
-      // Check if nickname is already taken by another player
+      // If nickname is already taken, generate alternatives
       const playerWithSameNickname = await Player.findOne({ nickname });
       if (playerWithSameNickname) {
         const alternativeNicknames = generateAlternativeNicknames(nickname);
@@ -112,8 +113,8 @@ export const signup = async (req: Request, res: Response) => {
       const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
       const { token, refreshToken } = generateTokens(tokenPayload);
 
-      // Log the token payload before sending it back
-      logger.info('Token payload:', tokenPayload);
+      // Log the user ID before sending it back
+      logger.info(`Player created: ${userId}`);
 
       return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
       
@@ -208,6 +209,7 @@ export const getBattleLog = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
  }
 };
+
 
 export const searchForPlayer = async (req: Request, res: Response) => {
   try {
