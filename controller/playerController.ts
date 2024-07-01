@@ -65,7 +65,7 @@ export const signup = async (req: Request, res: Response) => {
         const { token, refreshToken } = generateTokens(tokenPayload);
 
         // Log the user ID before sending it back
-        logger.info(`User logged in: ${userId}`);
+        logger.info( `User logged in: userId: ${userId}`, {nickname} );
 
         return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
       };
@@ -114,7 +114,7 @@ export const signup = async (req: Request, res: Response) => {
       const { token, refreshToken } = generateTokens(tokenPayload);
 
       // Log the user ID before sending it back
-      logger.info(`Player created: ${userId}`);
+      logger.info( `Player created: userId: ${userId}`, {nickname} );
 
       return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
       

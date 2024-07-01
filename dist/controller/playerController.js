@@ -65,7 +65,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
             const { token, refreshToken } = generateTokens(tokenPayload);
             // Log the user ID before sending it back
-            logger_1.default.info(`User logged in: ${userId}`);
+            logger_1.default.info(`User logged in: ${userId}`, { nickname });
             return res.status(200).json({ message: 'OK', player: existingPlayer, token, refreshToken });
         }
         ;
@@ -111,7 +111,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const tokenPayload = { userId, walletAddress, nickname }; // Include walletAddress and nickname
         const { token, refreshToken } = generateTokens(tokenPayload);
         // Log the user ID before sending it back
-        logger_1.default.info(`Player created: ${userId}`);
+        logger_1.default.info(`Player created: userId: ${userId}`, { nickname });
         return res.status(201).json({ message: 'Player created successfully', player: newPlayer, token, refreshToken });
     }
     catch (error) {
