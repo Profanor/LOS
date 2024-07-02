@@ -32,7 +32,7 @@ app.use(rumbleRouter_1.default);
 app.use(notifications_1.default);
 app.use("/api", tokenRefreshRouter_1.default);
 const server = http_1.default.createServer(app);
-const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '8080';
+const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '3000';
 const wss = (0, webSocketController_1.initializeWebSocket)(parseInt(WEBSOCKET_PORT));
 // Create Socket.IO server
 const io = new socket_io_1.Server(server);

@@ -31,7 +31,7 @@ app.use("/api", refreshToken);
 
 const server = http.createServer(app);
 
-const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '8080';
+const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '3000';
 const wss = initializeWebSocket(parseInt(WEBSOCKET_PORT));
 
 // Create Socket.IO server
