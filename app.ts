@@ -1,6 +1,9 @@
 import express from 'express';
 import http from 'http';
 import logger from 'morgan';
+import dotenv from 'dotenv';
+import { Server } from 'socket.io';
+
 import index from './routes/index';
 import playerRoutes from './routes/players'; 
 import friendRequest from './routes/friendRequest';
@@ -9,9 +12,13 @@ import teamRoutes from './routes/teamRouter';
 import rumbleRoutes from './routes/rumbleRouter';
 import notificationRoute from './routes/notifications';
 import refreshToken from './routes/tokenRefreshRouter';
-import { Server } from 'socket.io';
 import { initializeWebSocket } from './controller/webSocketController';
 import main from './config/database';
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Initialie database
 main();
 
 const app = express();
@@ -20,6 +27,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logger('dev'));
+
+// Route setup
 app.use('/', index);
 app.use(playerRoutes);
 app.use('/api/friendRequests', friendRequest);
@@ -29,10 +38,9 @@ app.use(rumbleRoutes);
 app.use(notificationRoute);
 app.use("/api", refreshToken);
 
+// Create HTTP server
 const server = http.createServer(app);
 
-const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '3000';
-const wss = initializeWebSocket(parseInt(WEBSOCKET_PORT));
 
 // Create Socket.IO server
 const io = new Server(server);
@@ -59,7 +67,12 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
+const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || '3000';
+
+// Initialize Websocket
+const wss = initializeWebSocket(parseInt(WEBSOCKET_PORT));
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
