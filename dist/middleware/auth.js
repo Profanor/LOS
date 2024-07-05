@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const axios_1 = __importDefault(require("axios"));
+const logger_1 = __importDefault(require("../logger"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const logger_1 = __importDefault(require("../logger"));
 // Generate a random secret key of sufficient length
 const generateSecretKey = () => {
     return crypto_1.default.randomBytes(32).toString('hex'); // Generate a 256-bit (32-byte) random string

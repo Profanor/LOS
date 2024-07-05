@@ -13,8 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.declineInvite = exports.joinTeam = exports.createTeam = void 0;
-const teams_1 = __importDefault(require("../models/teams"));
 const webSocketController_1 = require("./webSocketController"); // Import WebSocket server instance
+const teams_1 = __importDefault(require("../models/teams"));
 const createTeam = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { teamName, owner } = req.body;

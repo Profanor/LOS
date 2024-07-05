@@ -1,7 +1,7 @@
 import { Response, Request } from "express"
-import Team from '../models/teams';
 import { wss } from './webSocketController'; // Import WebSocket server instance
 import { WebSocketWithWalletAddress } from './webSocketController';
+import Team from '../models/teams';
 
 export const createTeam = async (req: Request, res: Response) => {
     try {

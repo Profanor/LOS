@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import crypto from 'crypto';
 import axios from "axios";
+import logger from "../logger";
 import dotenv from 'dotenv';
 dotenv.config(); 
-import logger from "../logger";
 
 export interface AuthenticatedRequest extends Request {
   user?: {

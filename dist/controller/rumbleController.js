@@ -13,9 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.joinRumble = exports.createRumble = void 0;
+const webSocketController_1 = require("./webSocketController"); // Import WebSocket server instance
 const rumble_1 = __importDefault(require("../models/rumble"));
 const player_1 = __importDefault(require("../models/player"));
-const webSocketController_1 = require("./webSocketController"); // Import WebSocket server instance
 const createRumble = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { rumbleName, rumbleReward, owner } = req.body;
