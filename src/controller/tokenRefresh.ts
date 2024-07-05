@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import Player from '../models/player'
+import Player from '../models/player';
 import jwt from 'jsonwebtoken';
-import logger from "../logger";
+import logger from '../logger';
 
 const secretKey = process.env.SECRET_KEY;
 

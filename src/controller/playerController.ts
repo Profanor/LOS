@@ -2,7 +2,7 @@ import { Response, Request } from "express";
 import Player from '../models/player';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import logger from "../logger";
+import logger from '../logger';
 
 
 // Function to generate a random secret key

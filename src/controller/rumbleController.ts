@@ -2,7 +2,7 @@ import { Response, Request } from "express";
 import { WebSocketWithWalletAddress } from './webSocketController';
 import { wss } from './webSocketController'; // Import WebSocket server instance
 import RoyalRumble from '../models/rumble';
-import Player from "../models/player";
+import Player from '../models/player';
 
 export const createRumble = async (req: Request, res: Response) => {
     try {

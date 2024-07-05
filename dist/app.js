@@ -26,11 +26,11 @@ app.use((0, morgan_1.default)('dev'));
 // Route setup
 app.use('/', index_1.default);
 app.use('/api', tokenRefreshRouter_1.default);
+app.use('/api', devTester_1.default);
 app.use('/api/friendRequests', friendRequest_1.default);
 app.use(players_1.default);
 app.use(pvpRouter_1.default);
 app.use(teamRouter_1.default);
 app.use(rumbleRouter_1.default);
 app.use(notifications_1.default);
-app.use('/api', devTester_1.default);
 exports.default = app;

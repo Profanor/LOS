@@ -25,12 +25,12 @@ app.use(logger('dev'));
 // Route setup
 app.use('/', index);
 app.use('/api', refreshToken);
+app.use('/api', devTestRoute);
 app.use('/api/friendRequests', friendRequest);
 app.use(playerRoutes);
 app.use(pvpRoutes);
 app.use(teamRoutes);
 app.use(rumbleRoutes);
 app.use(notificationRoute);
-app.use('/api', devTestRoute);
 
 export default app;

@@ -3,7 +3,7 @@ import { WebSocketWithNickname } from './webSocketController';
 import { wss } from './webSocketController'; // Import WebSocket server instance
 import { AuthenticatedRequest } from '../middleware/auth';
 import Player from '../models/player';
-import logger from "../logger";
+import logger from '../logger';
 
 export const sendPvpRequest = async (req: AuthenticatedRequest, res: Response) => {
     try {

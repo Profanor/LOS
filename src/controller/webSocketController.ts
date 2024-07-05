@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import logger from "../logger";
+import logger from '../logger';
 
 // Store WebSocket server instance
 let wss: WebSocket.Server;
