@@ -1,5 +1,6 @@
 import authenticateToken from '../middleware/auth';
 import express from 'express';
+import limiter from '../middleware/rateLimiter';
 import { 
     signup,
     switchCharacter,
@@ -12,7 +13,7 @@ import {
 
 const router = express.Router();
 
-router.post('/api/players/signup', signup);
+router.post('/api/players/signup', limiter, signup);
 
 router.post('/api/players/switch-character', authenticateToken, switchCharacter);
   
