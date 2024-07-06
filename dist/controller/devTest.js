@@ -21,12 +21,24 @@ const devTest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ error: 'testID and deviceID are required' });
     }
     try {
-        const tester = yield devTest_1.default.findOne({ testID, deviceID });
+        const tester = yield devTest_1.default.findOne({ testID });
         if (tester) {
-            return res.json({ confirmed: true });
+            if (tester.deviceID) {
+                if (tester.deviceID === deviceID) {
+                    return res.json({ confirmed: true });
+                }
+                else {
+                    return res.status(403).json({ error: 'Device ID does not match the registered device ID for this test ID.' });
+                }
+            }
+            else {
+                tester.deviceID = deviceID;
+                yield tester.save();
+                return res.json({ confirmed: true });
+            }
         }
         else {
-            return res.json({ confirmed: false });
+            return res.status(404).json({ error: 'Test ID not found.' });
         }
     }
     catch (error) {
