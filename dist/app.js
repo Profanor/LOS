@@ -19,6 +19,8 @@ const database_1 = __importDefault(require("./config/database"));
 // Initialize database
 (0, database_1.default)();
 const app = (0, express_1.default)();
+// Trust the first proxy
+app.set('trust proxy', 1);
 //Middleware Setup
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));

@@ -17,10 +17,16 @@ main();
 
 const app = express();
 
+// Trust the first proxy
+app.set('trust proxy', 1);
+
+
 //Middleware Setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logger('dev'));
+
+
 
 // Route setup
 app.use('/', index);
